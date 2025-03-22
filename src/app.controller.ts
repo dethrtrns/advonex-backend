@@ -1,12 +1,13 @@
 import { Controller, Get } from '@nestjs/common';
-import { AppService } from './app.service';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('hello')
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
-
   @Get()
-  getHello(): string {
-    return this.appService.getHello();
+  @ApiOperation({ summary: 'Hello World endpoint' })
+  @ApiResponse({ status: 200, description: 'Returns a hello world message' })
+  getHello(): { message: string } {
+    return { message: 'Hello World from Advonex API!' };
   }
 }
