@@ -151,13 +151,13 @@ npx prisma generate
 1. Create a new file `prisma/seed.ts`:
 
 ```typescript
-import { PrismaClient } from "@prisma/client";
-import { mockLawyers } from "../src/data/mockData";
+import { PrismaClient } from '@prisma/client';
+import { mockLawyers } from '../src/data/seedData';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log("Seeding database...");
+  console.log('Seeding database...');
 
   // Clear existing data
   await prisma.education.deleteMany();
@@ -172,7 +172,7 @@ async function main() {
         phoneNumber: lawyerData.phone,
         name: lawyerData.name,
         email: lawyerData.email,
-        role: "LAWYER",
+        role: 'LAWYER',
       },
     });
 
@@ -206,7 +206,7 @@ async function main() {
     }
   }
 
-  console.log("Seeding completed.");
+  console.log('Seeding completed.');
 }
 
 main()
@@ -259,10 +259,10 @@ nest g service lawyers
 2. Update `src/lawyers/lawyers.module.ts`:
 
 ```typescript
-import { Module } from "@nestjs/common";
-import { LawyersController } from "./lawyers.controller";
-import { LawyersService } from "./lawyers.service";
-import { PrismaService } from "../prisma/prisma.service";
+import { Module } from '@nestjs/common';
+import { LawyersController } from './lawyers.controller';
+import { LawyersService } from './lawyers.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Module({
   controllers: [LawyersController],
@@ -282,8 +282,8 @@ nest g service prisma
 4. Update `src/prisma/prisma.service.ts`:
 
 ```typescript
-import { Injectable, OnModuleInit, OnModuleDestroy } from "@nestjs/common";
-import { PrismaClient } from "@prisma/client";
+import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import { PrismaClient } from '@prisma/client';
 
 @Injectable()
 export class PrismaService
@@ -305,8 +305,8 @@ export class PrismaService
 1. Create `src/lawyers/dto/lawyer.dto.ts`:
 
 ```typescript
-import { ApiProperty } from "@nestjs/swagger";
-import { Lawyer, Education } from "@prisma/client";
+import { ApiProperty } from '@nestjs/swagger';
+import { Lawyer, Education } from '@prisma/client';
 
 // Use Prisma-generated types as base types
 export class EducationDto implements Partial<Education> {
@@ -420,10 +420,10 @@ export class LawyerDetailsResponseDto {
 1. Update `src/lawyers/lawyers.service.ts`:
 
 ```typescript
-import { Injectable } from "@nestjs/common";
-import { PrismaService } from "../prisma/prisma.service";
-import { Lawyer } from "@prisma/client"; // Import Prisma-generated types
-import { LawyerDto, LawyerDetailsDto, PaginationDto } from "./dto/lawyer.dto";
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { Lawyer } from '@prisma/client'; // Import Prisma-generated types
+import { LawyerDto, LawyerDetailsDto, PaginationDto } from './dto/lawyer.dto';
 
 @Injectable()
 export class LawyersService {
@@ -433,20 +433,20 @@ export class LawyersService {
     practiceArea?: string,
     location?: string,
     page = 1,
-    limit = 10
+    limit = 10,
   ): Promise<{ lawyers: LawyerDto[]; pagination: PaginationDto }> {
     const where = {};
 
     if (practiceArea) {
-      where["practiceAreas"] = {
+      where['practiceAreas'] = {
         has: practiceArea,
       };
     }
 
     if (location) {
-      where["location"] = {
+      where['location'] = {
         contains: location,
-        mode: "insensitive",
+        mode: 'insensitive',
       };
     }
 
@@ -486,22 +486,22 @@ export class LawyersService {
 2. Update `src/lawyers/lawyers.controller.ts`:
 
 ```typescript
-import { Controller, Get, Query } from "@nestjs/common";
-import { LawyersService } from "./lawyers.service";
-import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
-import { LawyerResponseDto, LawyerQueryDto } from "./dto/lawyer.dto";
+import { Controller, Get, Query } from '@nestjs/common';
+import { LawyersService } from './lawyers.service';
+import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { LawyerResponseDto, LawyerQueryDto } from './dto/lawyer.dto';
 
-@ApiTags("lawyers")
-@Controller("api/lawyers")
+@ApiTags('lawyers')
+@Controller('api/lawyers')
 export class LawyersController {
   constructor(private readonly lawyersService: LawyersService) {}
 
   @Get()
-  @ApiOperation({ summary: "Get list of lawyers with filters" })
-  @ApiQuery({ name: "practiceArea", required: false })
-  @ApiQuery({ name: "location", required: false })
-  @ApiQuery({ name: "page", required: false })
-  @ApiQuery({ name: "limit", required: false })
+  @ApiOperation({ summary: 'Get list of lawyers with filters' })
+  @ApiQuery({ name: 'practiceArea', required: false })
+  @ApiQuery({ name: 'location', required: false })
+  @ApiQuery({ name: 'page', required: false })
+  @ApiQuery({ name: 'limit', required: false })
   @ApiResponse({ type: LawyerResponseDto })
   async findAll(@Query() query: LawyerQueryDto) {
     const { practiceArea, location, page = 1, limit = 10 } = query;
@@ -509,7 +509,7 @@ export class LawyersController {
       practiceArea,
       location,
       +page,
-      +limit
+      +limit,
     );
 
     return {
@@ -587,7 +587,7 @@ import {
   Param,
   NotFoundException,
   InternalServerErrorException,
-} from "@nestjs/common";
+} from '@nestjs/common';
 ```
 
 #### 3.5. Test endpoints with Swagger
@@ -601,10 +601,10 @@ npm install @nestjs/swagger swagger-ui-express
 2. Configure Swagger in `src/main.ts`:
 
 ```typescript
-import { NestFactory } from "@nestjs/core";
-import { AppModule } from "./app.module";
-import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
-import { ValidationPipe } from "@nestjs/common";
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from './app.module';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -614,12 +614,12 @@ async function bootstrap() {
 
   // Configure Swagger
   const config = new DocumentBuilder()
-    .setTitle("Advonex API")
-    .setDescription("The Advonex API documentation")
-    .setVersion("1.0")
+    .setTitle('Advonex API')
+    .setDescription('The Advonex API documentation')
+    .setVersion('1.0')
     .build();
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup("api-docs", app, document);
+  SwaggerModule.setup('api-docs', app, document);
 
   await app.listen(3000);
 }
