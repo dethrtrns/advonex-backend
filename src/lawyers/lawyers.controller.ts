@@ -7,14 +7,32 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { LawyersService } from './lawyers.service';
-import { ApiOperation, ApiQuery, ApiResponse, ApiTags, ApiParam } from '@nestjs/swagger';
-import { LawyerResponseDto, LawyerQueryDto, LawyerDetailsResponseDto } from './dto/lawyer.dto';
+import {
+  ApiOperation,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+  ApiParam,
+} from '@nestjs/swagger';
+import {
+  LawyerResponseDto,
+  LawyerQueryDto,
+  LawyerDetailsResponseDto,
+} from './dto/lawyer.dto';
+
+// This controller handles all HTTP requests related to lawyer data
+// It exposes RESTful endpoints for retrieving lawyer information
 
 @ApiTags('lawyers')
 @Controller('api/lawyers')
 export class LawyersController {
   constructor(private readonly lawyersService: LawyersService) {}
 
+  /**
+   * GET /api/lawyers - Retrieves a list of lawyers with optional filtering and pagination
+   * Supports filtering by practice area and location
+   * Supports pagination with page number and limit parameters
+   */
   @Get()
   @ApiOperation({ summary: 'Get list of lawyers with filters' })
   @ApiQuery({ name: 'practiceArea', required: false })
@@ -23,7 +41,11 @@ export class LawyersController {
   @ApiQuery({ name: 'limit', required: false })
   @ApiResponse({ type: LawyerResponseDto })
   async findAll(@Query() query: LawyerQueryDto) {
+    // Extract query parameters with defaults for pagination
     const { practiceArea, location, page = 1, limit = 10 } = query;
+    
+    // Call service method to get filtered and paginated data
+    // Convert page and limit to numbers with the + operator
     const { lawyers, pagination } = await this.lawyersService.findAll(
       practiceArea,
       location,
@@ -31,6 +53,7 @@ export class LawyersController {
       +limit,
     );
 
+    // Return standardized response format with success flag
     return {
       success: true,
       data: lawyers,
@@ -38,22 +61,36 @@ export class LawyersController {
     };
   }
 
+  /**
+   * GET /api/lawyers/:id - Retrieves detailed information about a specific lawyer
+   * Returns complete lawyer profile including education and practice court information
+   * Returns 404 if lawyer with specified ID doesn't exist
+   */
   @Get(':id')
   @ApiOperation({ summary: 'Get lawyer details by ID' })
   @ApiParam({ name: 'id', description: 'Lawyer ID' })
   @ApiResponse({ type: LawyerDetailsResponseDto })
+  @ApiResponse({ status: 404, description: 'Lawyer not found' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
   async findOne(@Param('id') id: string) {
     try {
+      // Call service method to get lawyer details by ID
       const lawyer = await this.lawyersService.findOne(id);
+      
+      // Return standardized response format with success flag
       return {
         success: true,
         data: lawyer,
       };
     } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
+      // The NotFoundException will be handled by NestJS's exception filter
+      // This allows the error to be properly formatted in the response
+      if (!(error instanceof NotFoundException)) {
+        // For any other errors, wrap in a 500 Internal Server Error
+        // This prevents exposing internal error details to clients
+        throw new InternalServerErrorException('Error fetching lawyer details');
       }
-      throw new InternalServerErrorException('Error fetching lawyer details');
+      throw error;
     }
   }
 }

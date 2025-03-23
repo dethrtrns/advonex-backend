@@ -1,122 +1,161 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Lawyer, Education, PracticeCourt } from '@prisma/client';
 
-// Use Prisma-generated types as base types
+// This file contains Data Transfer Objects (DTOs) for the lawyers module
+// DTOs define the shape of data that is transferred between client and server
+// They also provide documentation for the API through Swagger/OpenAPI
+
+// Use Prisma-generated types as base types for consistency with database schema
+
+/**
+ * DTO for lawyer's education information
+ * Contains details about academic qualifications
+ */
 export class EducationDto implements Partial<Education> {
   @ApiProperty()
-  id: string;
+  id: string; // Unique identifier for the education record
 
   @ApiProperty()
-  degree: string;
+  degree: string; // Academic degree obtained (e.g., LLB, JD)
 
   @ApiProperty()
-  institution: string;
+  institution: string; // Name of the educational institution
 
   @ApiProperty()
-  year: string;
+  year: string; // Year of graduation
 }
 
+/**
+ * DTO for lawyer's practice court information
+ * Contains details about courts where the lawyer is authorized to practice
+ */
 export class PracticeCourtDto implements Partial<PracticeCourt> {
   @ApiProperty()
-  id: string;
+  id: string; // Unique identifier for the practice court record
 
   @ApiProperty()
-  primary: string;
+  primary: string; // Primary court where the lawyer practices
 
   @ApiProperty({ required: false, nullable: true })
-  secondary?: string;
+  secondary?: string; // Optional secondary court where the lawyer practices
 }
 
-// For lawyers listing, we only need a subset of fields
+/**
+ * Base DTO for lawyer information used in listings
+ * Contains only essential fields needed for lawyer cards/list views
+ * Optimized for list endpoints where detailed information is not required
+ */
 export class LawyerDto implements Partial<Lawyer> {
   @ApiProperty()
-  id: string;
+  id: string; // Unique identifier for the lawyer
 
   @ApiProperty()
-  name: string;
+  name: string; // Full name of the lawyer
 
   @ApiProperty({ required: false, nullable: true })
-  photo?: string;
+  photo?: string | null; // URL to lawyer's profile photo, optional
 
   @ApiProperty({ type: [String] })
-  practiceAreas: string[];
+  practiceAreas: string[]; // Array of practice areas (e.g., "Criminal", "Family Law")
 
   @ApiProperty()
-  location: string;
+  location: string; // Geographical location of practice
 
   @ApiProperty()
-  experience: number;
+  experience: number; // Years of professional experience
 
   @ApiProperty()
-  consultFee: number;
+  consultFee: number; // Consultation fee amount
 }
 
-// For lawyer details, we extend the base type and add related data
+/**
+ * Extended DTO for detailed lawyer information
+ * Used for single lawyer view where complete profile is needed
+ * Includes all base fields plus contact information and related entities
+ */
 export class LawyerDetailsDto extends LawyerDto {
   @ApiProperty({ required: false, nullable: true })
-  email?: string;
+  email?: string; // Contact email address, optional
 
   @ApiProperty({ required: false, nullable: true })
-  phone?: string;
+  phone?: string; // Contact phone number, optional
 
   @ApiProperty({ required: false, nullable: true })
-  bio?: string;
+  bio?: string; // Professional biography/description, optional
 
   @ApiProperty()
-  barId: string;
+  barId: string; // Bar association ID/license number
 
   @ApiProperty({ type: EducationDto })
-  education: EducationDto;
+  education: EducationDto; // Related education information
 
   @ApiProperty({ type: PracticeCourtDto })
-  practiceCourt: PracticeCourtDto;
+  practiceCourt: PracticeCourtDto; // Related practice court information
 }
 
-// Query parameters are not from Prisma types, so we define them as needed
+/**
+ * DTO for query parameters used in lawyer listing endpoint
+ * Defines the structure of filter and pagination parameters
+ * These parameters are passed as query string in the GET request
+ */
 export class LawyerQueryDto {
   @ApiProperty({ required: false })
-  practiceArea?: string;
+  practiceArea?: string; // Filter by lawyer's practice area
 
   @ApiProperty({ required: false })
-  location?: string;
+  location?: string; // Filter by lawyer's location
 
   @ApiProperty({ required: false })
-  page?: number;
+  page?: number; // Page number for pagination
 
   @ApiProperty({ required: false })
-  limit?: number;
+  limit?: number; // Number of items per page
 }
 
-// Response wrapper types
+/**
+ * DTO for pagination metadata
+ * Used to provide information about paginated results
+ * Helps client-side implement pagination controls
+ */
 export class PaginationDto {
   @ApiProperty()
-  total: number;
+  total: number; // Total number of records matching the filter criteria
 
   @ApiProperty()
-  page: number;
+  page: number; // Current page number
 
   @ApiProperty()
-  limit: number;
+  limit: number; // Number of records per page
 
   @ApiProperty()
-  totalPages: number;
+  totalPages: number; // Total number of pages available
 }
 
+/**
+ * Standardized response wrapper for lawyer listing endpoint
+ * Provides consistent API response structure
+ * Includes success flag, data payload, and pagination metadata
+ */
 export class LawyerResponseDto {
   @ApiProperty()
-  success: boolean;
+  success: boolean; // Indicates if the request was successful
 
   @ApiProperty({ type: [LawyerDto] })
-  data: LawyerDto[];
+  data: LawyerDto[]; // Array of lawyer records
 
   @ApiProperty()
-  pagination: PaginationDto;
+  pagination: PaginationDto; // Pagination metadata
 }
 
+/**
+ * Standardized response wrapper for lawyer details endpoint
+ * Provides consistent API response structure
+ * Includes success flag and detailed lawyer data
+ */
 export class LawyerDetailsResponseDto {
   @ApiProperty()
-  success: boolean;
+  success: boolean; // Indicates if the request was successful
 
   @ApiProperty()
-  data: LawyerDetailsDto;
+  data: LawyerDetailsDto; // Detailed lawyer information
 }
