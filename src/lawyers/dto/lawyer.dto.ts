@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Lawyer, Education } from '@prisma/client';
+import { Lawyer, Education, PracticeCourt } from '@prisma/client';
 
 // Use Prisma-generated types as base types
 export class EducationDto implements Partial<Education> {
@@ -14,6 +14,17 @@ export class EducationDto implements Partial<Education> {
 
   @ApiProperty()
   year: string;
+}
+
+export class PracticeCourtDto implements Partial<PracticeCourt> {
+  @ApiProperty()
+  id: string;
+
+  @ApiProperty()
+  primary: string;
+
+  @ApiProperty({ required: false, nullable: true })
+  secondary?: string;
 }
 
 // For lawyers listing, we only need a subset of fields
@@ -54,8 +65,11 @@ export class LawyerDetailsDto extends LawyerDto {
   @ApiProperty()
   barId: string;
 
-  @ApiProperty({ type: [EducationDto] })
-  education: EducationDto[];
+  @ApiProperty({ type: EducationDto })
+  education: EducationDto;
+
+  @ApiProperty({ type: PracticeCourtDto })
+  practiceCourt: PracticeCourtDto;
 }
 
 // Query parameters are not from Prisma types, so we define them as needed

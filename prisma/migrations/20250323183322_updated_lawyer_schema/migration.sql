@@ -45,6 +45,16 @@ CREATE TABLE "Education" (
     CONSTRAINT "Education_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "PracticeCourt" (
+    "id" TEXT NOT NULL,
+    "primary" TEXT NOT NULL,
+    "secondary" TEXT,
+    "lawyerId" TEXT NOT NULL,
+
+    CONSTRAINT "PracticeCourt_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "User_phoneNumber_key" ON "User"("phoneNumber");
 
@@ -54,8 +64,17 @@ CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 -- CreateIndex
 CREATE UNIQUE INDEX "Lawyer_userId_key" ON "Lawyer"("userId");
 
+-- CreateIndex
+CREATE UNIQUE INDEX "Education_lawyerId_key" ON "Education"("lawyerId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "PracticeCourt_lawyerId_key" ON "PracticeCourt"("lawyerId");
+
 -- AddForeignKey
 ALTER TABLE "Lawyer" ADD CONSTRAINT "Lawyer_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Education" ADD CONSTRAINT "Education_lawyerId_fkey" FOREIGN KEY ("lawyerId") REFERENCES "Lawyer"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PracticeCourt" ADD CONSTRAINT "PracticeCourt_lawyerId_fkey" FOREIGN KEY ("lawyerId") REFERENCES "Lawyer"("id") ON DELETE CASCADE ON UPDATE CASCADE;

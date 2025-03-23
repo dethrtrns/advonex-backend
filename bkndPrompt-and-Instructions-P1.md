@@ -56,7 +56,8 @@ model Lawyer {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  education     Education[]
+  education     Education?
+  practiceCourt PracticeCourt?
 }
 
 model Education {
@@ -66,7 +67,16 @@ model Education {
   year        String
 
   lawyer      Lawyer @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
-  lawyerId    String
+  lawyerId    String  @unique
+}
+
+model PracticeCourt {
+  id          String  @id @default(uuid())
+  primary     String
+  secondary   String?
+
+  lawyer      Lawyer  @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
+  lawyerId    String  @unique
 }
 ```
 
@@ -633,3 +643,48 @@ npm run start:dev
 ```
 
 4. Visit http://localhost:3000/api-docs to test your API endpoints using Swagger UI
+
+<!--
+temp prompt: Remember that right now for this project our single source of truth is the seedData.ts file, any changes here should propagate throughout the project.
+I've updates/changed the seed/mock data. According to these changes show me what needs to be changes/update/modified/added to the bkndPrompt-and-Instructions-P1.md file, and in the whole project(current workspace-all files-schema, code file, etc., anything that needs to be updated to reflect the new seeddata changes).
+old seed data:
+new seed data:
+
+
+
+DO NOT IMPLEMENT ANYTHING UNTIL I SAY- "GO DO IT". JUST SHOW ME WHAT NEEDS TO CHANGE. DO NOT SHOW WHOLE FILE/CODE, JUST THE CHANGE NEEDED AND WHERE.
+
+I need to update my Advonex backend project to accommodate changes in the seed data structure. The changes include:
+
+1. The education field changed from an array to a single object
+2. A new practiceCourts field with primary and optional secondary properties was added
+3. The practiceAreas array now contains only one practice area per lawyer
+
+Please implement the following changes:
+
+1. Update the Prisma schema in prisma/schema.prisma:
+   - Change Education model relationship with Lawyer from many-to-one to one-to-one
+   - Add a new PracticeCourt model with one-to-one relationship to Lawyer
+
+2. Update the seed script in prisma/seed.ts:
+   - Modify education creation to handle a single education object instead of an array
+   - Add creation of practice court records
+
+3. Update the DTOs in src/lawyers/dto/lawyer.dto.ts:
+   - Update EducationDto to match new structure
+   - Add new PracticeCourtDto
+   - Update LawyerDetailsDto to include practiceCourt
+
+4. Update the Lawyer service in src/lawyers/lawyers.service.ts:
+   - Include practice court data in the findOne method
+
+5. Update the implementation guide in bkndPrompt-and-Instructions-P1.md to reflect these changes
+
+After making these changes, I'll need to:
+1. Delete existing migrations or reset the database
+2. Create a new migration with "npx prisma migrate dev --name updated_lawyer_schema"
+3. Generate the updated Prisma client
+4. Run the updated seed script
+
+Please implement these changes one by one, showing me the updated code for each file.
+ -->

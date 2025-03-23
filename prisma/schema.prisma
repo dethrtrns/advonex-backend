@@ -38,7 +38,8 @@ model Lawyer {
 
   user          User     @relation(fields: [userId], references: [id])
   userId        String   @unique
-  education     Education[]
+  education     Education?
+  practiceCourt PracticeCourt?
 }
 
 model Education {
@@ -48,7 +49,16 @@ model Education {
   year        String
 
   lawyer      Lawyer @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
-  lawyerId    String
+  lawyerId    String  @unique
+}
+
+model PracticeCourt {
+  id          String  @id @default(uuid())
+  primary     String
+  secondary   String?
+
+  lawyer      Lawyer  @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
+  lawyerId    String  @unique
 }
 
 enum Role {

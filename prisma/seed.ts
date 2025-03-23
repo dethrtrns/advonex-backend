@@ -7,6 +7,7 @@ async function main() {
   console.log('Seeding database...');
 
   // Clear existing data
+  await prisma.practiceCourt.deleteMany();
   await prisma.education.deleteMany();
   await prisma.lawyer.deleteMany();
   await prisma.user.deleteMany();
@@ -40,17 +41,24 @@ async function main() {
       },
     });
 
-    // Create education records
-    for (const edu of lawyerData.education) {
-      await prisma.education.create({
-        data: {
-          degree: edu.degree,
-          institution: edu.institution,
-          year: edu.year,
-          lawyerId: lawyer.id,
-        },
-      });
-    }
+    // Create education record (now a single object instead of an array)
+    await prisma.education.create({
+      data: {
+        degree: lawyerData.education.degree,
+        institution: lawyerData.education.institution,
+        year: lawyerData.education.year,
+        lawyerId: lawyer.id,
+      },
+    });
+
+    // Create practice court record
+    await prisma.practiceCourt.create({
+      data: {
+        primary: lawyerData.practiceCourts.primary,
+        secondary: lawyerData.practiceCourts.secondary,
+        lawyerId: lawyer.id,
+      },
+    });
   }
 
   console.log('Seeding completed.');

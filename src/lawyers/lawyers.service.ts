@@ -65,6 +65,7 @@ export class LawyersService {
       where: { id },
       include: {
         education: true,
+        practiceCourt: true,
       },
     });
 
