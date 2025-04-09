@@ -51,7 +51,7 @@ export class LawyersService {
     const skip = (page - 1) * limit;
 
     // Using Prisma to get lawyer data with specific fields
-    // Only select fields needed for the LawyerDto to optimize query
+    // Include practiceCourt relation as requested by frontend
     const lawyers = await this.prisma.lawyer.findMany({
       where,
       skip, // Skip records for pagination
@@ -64,6 +64,7 @@ export class LawyersService {
         location: true,
         experience: true,
         consultFee: true,
+        practiceCourt: true, // Include practice court information
       },
     });
 
