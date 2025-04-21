@@ -7,7 +7,10 @@ import {
   InternalServerErrorException,
   Post,
   Body,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { LawyersService } from './lawyers.service';
 import {
   ApiOperation,
@@ -15,6 +18,7 @@ import {
   ApiResponse,
   ApiTags,
   ApiParam,
+  ApiConsumes,
   ApiBody,
 } from '@nestjs/swagger';
 import {
@@ -23,6 +27,9 @@ import {
   LawyerDetailsResponseDto,
   CreateLawyerDto,
 } from './dto/lawyer.dto';
+import { UploadImageResponseDto } from './dto/upload.dto';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import { multerConfig } from '../cloudinary/multer.config';
 
 // This controller handles all HTTP requests related to lawyer data
 // It exposes RESTful endpoints for retrieving lawyer information
@@ -30,7 +37,11 @@ import {
 @ApiTags('lawyers')
 @Controller('api/lawyers')
 export class LawyersController {
-  constructor(private readonly lawyersService: LawyersService) {}
+  // Update the constructor in the LawyersController class
+  constructor(
+    private readonly lawyersService: LawyersService,
+    private readonly cloudinaryService: CloudinaryService,
+  ) {}
 
   /**
    * GET /api/lawyers - Retrieves a list of lawyers with optional filtering and pagination
@@ -123,6 +134,59 @@ export class LawyersController {
         throw new InternalServerErrorException('User with this email or phone already exists');
       }
       throw new InternalServerErrorException('Error creating lawyer profile');
+    }
+  }
+
+  // Add this endpoint to the LawyersController class
+  
+  /**
+   * POST /api/lawyers/:id/upload-photo - Uploads a profile photo for a lawyer
+   * @param id - Lawyer ID
+   * @param file - Image file to upload
+   * @returns Updated lawyer with new photo URL
+   */
+  @Post(':id/upload-photo')
+  @ApiOperation({ summary: 'Upload lawyer profile photo' })
+  @ApiParam({ name: 'id', description: 'Lawyer ID' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  })
+  @ApiResponse({ type: UploadImageResponseDto })
+  @UseInterceptors(FileInterceptor('file', multerConfig))
+  async uploadProfilePhoto(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    try {
+      // Upload image to Cloudinary
+      const uploadResult = await this.cloudinaryService.uploadImage(
+        file,
+        'advonex/lawyers/profiles',
+      );
+  
+      // Update lawyer profile with new photo URL
+      await this.lawyersService.updateProfilePhoto(id, uploadResult.url);
+  
+      return {
+        success: true,
+        data: {
+          imageUrl: uploadResult.url,
+        },
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Error uploading profile photo');
     }
   }
 }

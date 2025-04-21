@@ -164,4 +164,37 @@ export class LawyersService {
       return lawyer as LawyerDetailsDto;
     });
   }
+
+  // Add this method to the LawyersService class
+  
+  /**
+   * Updates a lawyer's profile photo URL
+   * @param id - Lawyer ID
+   * @param photoUrl - New photo URL from Cloudinary
+   * @returns Updated lawyer details
+   */
+  async updateProfilePhoto(id: string, photoUrl: string): Promise<LawyerDetailsDto> {
+    // Check if lawyer exists
+    const lawyer = await this.prisma.lawyer.findUnique({
+      where: { id },
+    });
+  
+    if (!lawyer) {
+      throw new NotFoundException(`Lawyer with ID ${id} not found`);
+    }
+  
+    // Update the photo URL
+    const updatedLawyer = await this.prisma.lawyer.update({
+      where: { id },
+      data: {
+        photo: photoUrl,
+      },
+      include: {
+        education: true,
+        practiceCourt: true,
+      },
+    });
+  
+    return updatedLawyer as LawyerDetailsDto;
+  }
 }
