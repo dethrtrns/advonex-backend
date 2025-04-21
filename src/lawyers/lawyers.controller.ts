@@ -5,6 +5,8 @@ import {
   Param,
   NotFoundException,
   InternalServerErrorException,
+  Post,
+  Body,
 } from '@nestjs/common';
 import { LawyersService } from './lawyers.service';
 import {
@@ -13,11 +15,13 @@ import {
   ApiResponse,
   ApiTags,
   ApiParam,
+  ApiBody,
 } from '@nestjs/swagger';
 import {
   LawyerResponseDto,
   LawyerQueryDto,
   LawyerDetailsResponseDto,
+  CreateLawyerDto,
 } from './dto/lawyer.dto';
 
 // This controller handles all HTTP requests related to lawyer data
@@ -91,6 +95,34 @@ export class LawyersController {
         throw new InternalServerErrorException('Error fetching lawyer details');
       }
       throw error;
+    }
+  }
+
+  /**
+   * POST /api/lawyers - Creates a new lawyer record
+   * Creates both a user and lawyer record in the database
+   * Returns the created lawyer details
+   */
+  @Post()
+  @ApiOperation({ summary: 'Create a new lawyer' })
+  @ApiBody({ type: CreateLawyerDto })
+  @ApiResponse({ type: LawyerDetailsResponseDto })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
+  async create(@Body() createLawyerDto: CreateLawyerDto) {
+    try {
+      const lawyer = await this.lawyersService.create(createLawyerDto);
+      
+      return {
+        success: true,
+        data: lawyer,
+      };
+    } catch (error) {
+      // Handle specific errors if needed
+      if (error.code === 'P2002') {
+        throw new InternalServerErrorException('User with this email or phone already exists');
+      }
+      throw new InternalServerErrorException('Error creating lawyer profile');
     }
   }
 }
