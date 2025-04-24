@@ -129,11 +129,18 @@ export class LawyersController {
         data: lawyer,
       };
     } catch (error) {
-      // Handle specific errors if needed
+      // Enhanced error handling with more details
+      console.error('Error creating lawyer:', error);
+      
+      // Handle specific Prisma errors with more descriptive messages
       if (error.code === 'P2002') {
-        throw new InternalServerErrorException('User with this email or phone already exists');
+        const field = error.meta?.target?.[0] || 'field';
+        throw new InternalServerErrorException(`User with this ${field} already exists`);
       }
-      throw new InternalServerErrorException('Error creating lawyer profile');
+      
+      // Return the actual error message for better debugging
+      const errorMessage = error.message || 'Error creating lawyer profile';
+      throw new InternalServerErrorException(errorMessage);
     }
   }
 
