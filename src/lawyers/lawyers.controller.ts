@@ -167,19 +167,21 @@ export class LawyersController {
     @UploadedFile() file: Express.Multer.File,
   ) {
     try {
-      // Upload image to Cloudinary
+      // Upload image to Cloudinary in the lawyers/profiles folder
       const uploadResult = await this.cloudinaryService.uploadImage(
         file,
         'advonex/lawyers/profiles',
       );
   
       // Update lawyer profile with new photo URL
-      await this.lawyersService.updateProfilePhoto(id, uploadResult.url);
+      const updatedLawyer = await this.lawyersService.updateProfilePhoto(id, uploadResult.url);
   
       return {
         success: true,
         data: {
           imageUrl: uploadResult.url,
+          publicId: uploadResult.publicId,
+          lawyer: updatedLawyer, // Return the updated lawyer object for convenience
         },
       };
     } catch (error) {

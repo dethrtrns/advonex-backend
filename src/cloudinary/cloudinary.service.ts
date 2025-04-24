@@ -33,4 +33,16 @@ export class CloudinaryService {
   async deleteImage(publicId: string): Promise<void> {
     await cloudinary.uploader.destroy(publicId);
   }
+  
+  /**
+   * Uploads an image to the common uploads folder
+   * @param file - Image file to upload
+   * @returns Object containing the URL and public ID of the uploaded image
+   */
+  async uploadCommonImage(
+    file: Express.Multer.File,
+  ): Promise<{ url: string; publicId: string }> {
+    // Use the existing uploadImage method but specify the common uploads folder
+    return this.uploadImage(file, 'advonex/common-uploads');
+  }
 }
