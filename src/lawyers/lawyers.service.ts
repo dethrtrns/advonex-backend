@@ -1,10 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Lawyer, Education } from '@prisma/client'; // Import Prisma-generated types
-import { LawyerDto, LawyerDetailsDto, PaginationDto } from './dto/lawyer.dto';
-
-// LawyersService handles all business logic related to lawyer data
-// It provides methods to retrieve lawyer information with filtering and pagination
+import { LawyerDto, LawyerDetailsDto, PaginationDto, CreateLawyerDto } from './dto/lawyer.dto';
 
 @Injectable()
 export class LawyersService {
@@ -108,5 +104,97 @@ export class LawyersService {
     // Return the data directly as the types match the LawyerDetailsDto structure
     // Type casting is used to ensure TypeScript recognizes the included relations
     return lawyer as LawyerDetailsDto;
+  }
+
+  /**
+   * Creates a new lawyer record with associated user, education, and practice court
+   * @param createLawyerDto - Data for creating the lawyer
+   * @returns The created lawyer with all related information
+   */
+  async create(createLawyerDto: CreateLawyerDto): Promise<LawyerDetailsDto> {
+    // Use Prisma transaction to ensure all related records are created or none at all
+    return this.prisma.$transaction(async (prisma) => {
+      // First create the user record
+      const user = await prisma.user.create({
+        data: {
+          phoneNumber: createLawyerDto.phone,
+          name: createLawyerDto.name,
+          email: createLawyerDto.email,
+          role: 'LAWYER',
+        },
+      });
+
+      // Then create the lawyer record with reference to the user
+      const lawyer = await prisma.lawyer.create({
+        data: {
+          name: createLawyerDto.name,
+          photo: createLawyerDto.photo,
+          practiceAreas: createLawyerDto.practiceAreas,
+          location: createLawyerDto.location,
+          experience: createLawyerDto.experience,
+          email: createLawyerDto.email,
+          phone: createLawyerDto.phone,
+          bio: createLawyerDto.bio,
+          consultFee: createLawyerDto.consultFee,
+          barId: createLawyerDto.barId,
+          userId: user.id,
+          // Create education record
+          education: {
+            create: {
+              degree: createLawyerDto.education.degree,
+              institution: createLawyerDto.education.institution,
+              year: createLawyerDto.education.year,
+            },
+          },
+          // Create practice court record
+          practiceCourt: {
+            create: {
+              primary: createLawyerDto.practiceCourt.primary,
+              secondary: createLawyerDto.practiceCourt.secondary,
+            },
+          },
+        },
+        // Include related records in the response
+        include: {
+          education: true,
+          practiceCourt: true,
+        },
+      });
+
+      return lawyer as LawyerDetailsDto;
+    });
+  }
+
+  // Add this method to the LawyersService class
+  
+  /**
+   * Updates a lawyer's profile photo URL
+   * @param id - Lawyer ID
+   * @param photoUrl - New photo URL from Cloudinary
+   * @returns Updated lawyer details
+   */
+  async updateProfilePhoto(id: string, photoUrl: string): Promise<LawyerDetailsDto> {
+    // Check if lawyer exists
+    const lawyer = await this.prisma.lawyer.findUnique({
+      where: { id },
+    });
+  
+    if (!lawyer) {
+      throw new NotFoundException(`Lawyer with ID ${id} not found`);
+    }
+  
+    // Update the photo URL
+    const updatedLawyer = await this.prisma.lawyer.update({
+      where: { id },
+      data: {
+        photo: photoUrl,
+      },
+      include: {
+        education: true,
+        practiceCourt: true,
+      },
+    });
+  
+    return updatedLawyer as LawyerDetailsDto;
   }
 }

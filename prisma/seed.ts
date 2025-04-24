@@ -4,9 +4,19 @@ import { mockLawyers } from '../src/data/seedData';
 const prisma = new PrismaClient();
 
 async function main() {
+  console.log('Checking if seeding is needed...');
+  
+  // Check if data already exists
+  const userCount = await prisma.user.count();
+  
+  if (userCount > 0) {
+    console.log('Database already has data, skipping seed');
+    return;
+  }
+  
   console.log('Seeding database...');
-
-  // Clear existing data
+  
+  // Clear existing data (only needed for fresh databases)
   await prisma.practiceCourt.deleteMany();
   await prisma.education.deleteMany();
   await prisma.lawyer.deleteMany();

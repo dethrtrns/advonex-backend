@@ -159,3 +159,54 @@ export class LawyerDetailsResponseDto {
   @ApiProperty()
   data: LawyerDetailsDto; // Detailed lawyer information
 }
+
+// Add this to the existing file, after the other DTOs
+
+
+// DTO for creating a new lawyer
+export class CreateLawyerDto {
+  @ApiProperty()
+  name: string;
+
+  @ApiProperty({ required: false, nullable: true })
+  photo?: string;
+
+  @ApiProperty({ type: [String] })
+  practiceAreas: string[];
+
+  @ApiProperty()
+  location: string;
+
+  @ApiProperty()
+  experience: number;
+
+  @ApiProperty()
+  email: string;
+
+  @ApiProperty()
+  phone: string;
+
+  @ApiProperty({ required: false, nullable: true })
+  bio?: string;
+
+  @ApiProperty()
+  consultFee: number;
+
+  @ApiProperty()
+  barId: string;
+
+  @ApiProperty()
+  education: {
+    degree: string;
+    institution: string;
+    year: string;
+  };
+
+  @ApiProperty()
+  practiceCourt: {
+    primary: string;
+    secondary?: string;
+  };
+}
+
+// Make sure to export this DTO in the file

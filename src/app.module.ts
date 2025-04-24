@@ -3,9 +3,10 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { LawyersModule } from './lawyers/lawyers.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { CloudinaryModule } from './cloudinary/cloudinary.module';
 
 @Module({
-  imports: [LawyersModule, PrismaModule],
+  imports: [LawyersModule, PrismaModule, CloudinaryModule],
   controllers: [AppController],
   providers: [AppService],
 })

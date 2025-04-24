@@ -5,7 +5,12 @@ import {
   Param,
   NotFoundException,
   InternalServerErrorException,
+  Post,
+  Body,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { LawyersService } from './lawyers.service';
 import {
   ApiOperation,
@@ -13,12 +18,18 @@ import {
   ApiResponse,
   ApiTags,
   ApiParam,
+  ApiConsumes,
+  ApiBody,
 } from '@nestjs/swagger';
 import {
   LawyerResponseDto,
   LawyerQueryDto,
   LawyerDetailsResponseDto,
+  CreateLawyerDto,
 } from './dto/lawyer.dto';
+import { UploadImageResponseDto } from './dto/upload.dto';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import { multerConfig } from '../cloudinary/multer.config';
 
 // This controller handles all HTTP requests related to lawyer data
 // It exposes RESTful endpoints for retrieving lawyer information
@@ -26,7 +37,11 @@ import {
 @ApiTags('lawyers')
 @Controller('api/lawyers')
 export class LawyersController {
-  constructor(private readonly lawyersService: LawyersService) {}
+  // Update the constructor in the LawyersController class
+  constructor(
+    private readonly lawyersService: LawyersService,
+    private readonly cloudinaryService: CloudinaryService,
+  ) {}
 
   /**
    * GET /api/lawyers - Retrieves a list of lawyers with optional filtering and pagination
@@ -91,6 +106,89 @@ export class LawyersController {
         throw new InternalServerErrorException('Error fetching lawyer details');
       }
       throw error;
+    }
+  }
+
+  /**
+   * POST /api/lawyers - Creates a new lawyer record
+   * Creates both a user and lawyer record in the database
+   * Returns the created lawyer details
+   */
+  @Post()
+  @ApiOperation({ summary: 'Create a new lawyer' })
+  @ApiBody({ type: CreateLawyerDto })
+  @ApiResponse({ type: LawyerDetailsResponseDto })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
+  async create(@Body() createLawyerDto: CreateLawyerDto) {
+    try {
+      const lawyer = await this.lawyersService.create(createLawyerDto);
+      
+      return {
+        success: true,
+        data: lawyer,
+      };
+    } catch (error) {
+      // Handle specific errors if needed
+      if (error.code === 'P2002') {
+        throw new InternalServerErrorException('User with this email or phone already exists');
+      }
+      throw new InternalServerErrorException('Error creating lawyer profile');
+    }
+  }
+
+  // Add this endpoint to the LawyersController class
+  
+  /**
+   * POST /api/lawyers/:id/upload-photo - Uploads a profile photo for a lawyer
+   * @param id - Lawyer ID
+   * @param file - Image file to upload
+   * @returns Updated lawyer with new photo URL
+   */
+  @Post(':id/upload-photo')
+  @ApiOperation({ summary: 'Upload lawyer profile photo' })
+  @ApiParam({ name: 'id', description: 'Lawyer ID' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  })
+  @ApiResponse({ type: UploadImageResponseDto })
+  @UseInterceptors(FileInterceptor('file', multerConfig))
+  async uploadProfilePhoto(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    try {
+      // Upload image to Cloudinary in the lawyers/profiles folder
+      const uploadResult = await this.cloudinaryService.uploadImage(
+        file,
+        'advonex/lawyers/profiles',
+      );
+  
+      // Update lawyer profile with new photo URL
+      const updatedLawyer = await this.lawyersService.updateProfilePhoto(id, uploadResult.url);
+  
+      return {
+        success: true,
+        data: {
+          imageUrl: uploadResult.url,
+          publicId: uploadResult.publicId,
+          lawyer: updatedLawyer, // Return the updated lawyer object for convenience
+        },
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Error uploading profile photo');
     }
   }
 }
