@@ -9,60 +9,242 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// --- Core Authentication & Profiles ---
+
+// Minimal User model for authentication and core identification
 model User {
+  id                  String   @id @default(uuid())
+  phoneNumber         String   @unique // Mandatory for login
+  role                Role     @default(CLIENT) // Mandatory, determines profile type (set during creation)
+  registrationPending Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  // A User links to EITHER a ClientProfile OR a LawyerProfile
+  clientProfile ClientProfile?
+  lawyerProfile LawyerProfile?
+}
+
+// New model for Client-specific details
+model ClientProfile {
+  id        String   @id @default(uuid())
+  name      String? // Optional details
+  photo     String?
+  email     String?  @unique // Optional, kept unique for now
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @unique // One-to-one link back to User
+
+  // Relations specific to Clients
+  savedLawyers SavedLawyer[]         @relation("ClientSaves")
+  sentRequests ConsultationRequest[] @relation("ClientRequests")
+}
+
+// Holds Lawyer-specific details
+model LawyerProfile {
+  id         String   @id @default(uuid())
+  photo      String?
+  location   String?
+  experience Int?
+  bio        String?
+  consultFee Int?
+  barId      String?
+  isVerified Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @unique // One-to-one link back to User
+
+  // --- Relations to Predefined & Detail Tables ---
+
+  // Specialization (One-to-Many from PracticeArea)
+  specializationId String? // Foreign key to PracticeArea
+  specialization   PracticeArea? @relation("LawyerSpecialization", fields: [specializationId], references: [id], onDelete: Restrict) // Prevent deleting Area if lawyers specialize in it
+
+  // Practice Areas (Many-to-Many)
+  practiceAreas LawyerPracticeArea[]
+
+  // Primary Court (One-to-Many from PracticeCourt)
+  primaryCourtId String? // Foreign key to PracticeCourt
+  primaryCourt   PracticeCourt? @relation("LawyerPrimaryCourt", fields: [primaryCourtId], references: [id], onDelete: Restrict) // Prevent deleting Court if lawyers use it as primary
+
+  // Practice Courts (Many-to-Many)
+  practiceCourts LawyerPracticeCourt[]
+
+  // Education (One-to-One)
+  education Education?
+
+  // Services (Many-to-Many)
+  services LawyerService[]
+
+  // Saved By Clients (Many-to-Many)
+  savedBy SavedLawyer[] @relation("SavedByClients")
+
+  // Received Requests (One-to-Many)
+  receivedRequests ConsultationRequest[] @relation("LawyerRequests")
+}
+
+// --- Lawyer Detail & Predefined List Models ---
+
+model Education {
   id          String   @id @default(uuid())
-  phoneNumber String   @unique
-  name        String?
-  email       String?  @unique
-  role        Role     @default(CLIENT)
+  degree      String // Required if Education record exists
+  institution String // Required if Education record exists
+  year        Int // Changed type to Int for numerical operations
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  lawyer      Lawyer?
+  lawyerProfile   LawyerProfile @relation(fields: [lawyerProfileId], references: [id], onDelete: Cascade)
+  lawyerProfileId String        @unique
 }
 
-model Lawyer {
-  id            String   @id @default(uuid())
-  name          String
-  photo         String?
-  practiceAreas String[]
-  location      String
-  experience    Int
-  email         String?
-  phone         String?
-  bio           String?
-  consultFee    Int
-  barId         String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+// Model for predefined Practice Areas
+model PracticeArea {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  user          User     @relation(fields: [userId], references: [id])
-  userId        String   @unique
-  education     Education?
-  practiceCourt PracticeCourt?
+  // Relation back to lawyers specializing in this area
+  specializingLawyers LawyerProfile[] @relation("LawyerSpecialization")
+
+  // Relation back to lawyers practicing in this area (Many-to-Many)
+  practicingLawyers LawyerPracticeArea[]
 }
 
-model Education {
-  id          String @id @default(uuid())
-  degree      String
-  institution String
-  year        String
+// Join table for LawyerProfile <-> PracticeArea (Many-to-Many)
+model LawyerPracticeArea {
+  lawyerProfileId String
+  practiceAreaId  String
+  assignedAt      DateTime @default(now())
 
-  lawyer      Lawyer @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
-  lawyerId    String  @unique
+  lawyerProfile LawyerProfile @relation(fields: [lawyerProfileId], references: [id], onDelete: Cascade)
+  practiceArea  PracticeArea  @relation(fields: [practiceAreaId], references: [id], onDelete: Cascade)
+  // @@index([lawyerProfileId]) // Optional: Consider if needed for specific queries
+
+  @@id([lawyerProfileId, practiceAreaId])
+  @@index([practiceAreaId])
 }
 
+// Model for predefined Practice Courts
 model PracticeCourt {
-  id          String  @id @default(uuid())
-  primary     String
-  secondary   String?
+  id        String   @id @default(uuid())
+  name      String   @unique // e.g., "Supreme Court", "District Court - City Name"
+  location  String? // Optional location detail if needed
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  lawyer      Lawyer  @relation(fields: [lawyerId], references: [id], onDelete: Cascade)
-  lawyerId    String  @unique
+  // Relation back to lawyers having this as primary court
+  primaryForLawyers LawyerProfile[] @relation("LawyerPrimaryCourt")
+
+  // Relation back to lawyers practicing in this court (Many-to-Many)
+  practicingLawyers LawyerPracticeCourt[]
 }
+
+// Join table for LawyerProfile <-> PracticeCourt (Many-to-Many)
+model LawyerPracticeCourt {
+  lawyerProfileId String
+  practiceCourtId String
+  assignedAt      DateTime @default(now())
+
+  lawyerProfile LawyerProfile @relation(fields: [lawyerProfileId], references: [id], onDelete: Cascade)
+  practiceCourt PracticeCourt @relation(fields: [practiceCourtId], references: [id], onDelete: Cascade)
+  // @@index([lawyerProfileId]) // Optional: Consider if needed for specific queries
+
+  @@id([lawyerProfileId, practiceCourtId])
+  @@index([practiceCourtId])
+}
+
+// Model for Services offered by Lawyers
+model Service {
+  id           String   @id @default(uuid())
+  name         String   @unique
+  description  String?
+  isPredefined Boolean  @default(false) // Indicates if service is system-defined or lawyer-custom
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  lawyers LawyerService[]
+}
+
+// Join Table for LawyerProfile <-> Service (Many-to-Many)
+model LawyerService {
+  lawyerProfileId String
+  serviceId       String
+  assignedAt      DateTime @default(now())
+
+  lawyerProfile LawyerProfile @relation(fields: [lawyerProfileId], references: [id], onDelete: Cascade)
+  service       Service       @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  // @@index([lawyerProfileId]) // Optional: Consider if needed for specific queries
+
+  @@id([lawyerProfileId, serviceId])
+  @@index([serviceId])
+}
+
+// --- Interaction Models ---
+
+// Model for Client saving/bookmarking Lawyers
+model SavedLawyer {
+  id              String   @id @default(uuid())
+  clientProfileId String
+  lawyerProfileId String
+  createdAt       DateTime @default(now())
+
+  client        ClientProfile @relation("ClientSaves", fields: [clientProfileId], references: [id], onDelete: Cascade)
+  lawyerProfile LawyerProfile @relation("SavedByClients", fields: [lawyerProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([clientProfileId, lawyerProfileId])
+  @@index([clientProfileId])
+  @@index([lawyerProfileId])
+}
+
+// Model for Client Consultation Requests
+model ConsultationRequest {
+  id              String        @id @default(uuid())
+  clientProfileId String
+  lawyerProfileId String
+  message         String
+  status          RequestStatus @default(PENDING)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  client        ClientProfile @relation("ClientRequests", fields: [clientProfileId], references: [id], onDelete: Cascade)
+  lawyerProfile LawyerProfile @relation("LawyerRequests", fields: [lawyerProfileId], references: [id], onDelete: Cascade)
+
+  @@index([clientProfileId])
+  @@index([lawyerProfileId])
+  @@index([status])
+}
+
+// --- Authentication Support ---
+
+// Model for storing OTPs during phone verification/login
+model Otp {
+  id          String   @id @default(uuid())
+  phoneNumber String
+  otp         String
+  expiresAt   DateTime
+  role        Role // Store intended role with OTP
+  createdAt   DateTime @default(now())
+
+  @@index([phoneNumber, expiresAt]) // Index for efficient lookup/cleanup
+}
+
+// --- Enums ---
 
 enum Role {
   CLIENT
   LAWYER
   ADMIN
+}
+
+enum RequestStatus {
+  PENDING
+  VIEWED
+  RESPONDED
+  CLOSED
 }

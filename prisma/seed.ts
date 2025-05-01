@@ -1,77 +1,104 @@
 import { PrismaClient } from '@prisma/client';
-import { mockLawyers } from '../src/data/seedData';
+import {
+  practiceAreas,
+  practiceCourts,
+  services,
+  users,
+  clientProfiles,
+  lawyerProfiles,
+  educations,
+  lawyerPracticeAreas,
+  lawyerPracticeCourts,
+  lawyerServices,
+  savedLawyers,
+  consultationRequests,
+} from '../src/data/seedData'; // Adjusted import path
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('Checking if seeding is needed...');
-  
-  // Check if data already exists
-  const userCount = await prisma.user.count();
-  
-  if (userCount > 0) {
-    console.log('Database already has data, skipping seed');
-    return;
-  }
-  
   console.log('Seeding database...');
-  
-  // Clear existing data (only needed for fresh databases)
-  await prisma.practiceCourt.deleteMany();
+
+  // --- Clear existing data (reverse order of dependency) ---
+  console.log('Clearing existing data...');
+  await prisma.consultationRequest.deleteMany();
+  await prisma.savedLawyer.deleteMany();
+  await prisma.lawyerService.deleteMany();
+  await prisma.lawyerPracticeCourt.deleteMany();
+  await prisma.lawyerPracticeArea.deleteMany();
   await prisma.education.deleteMany();
-  await prisma.lawyer.deleteMany();
+  // Profiles depend on Users, but also have relations pointing *to* them.
+  // Delete profiles first, then the user they link to.
+  await prisma.lawyerProfile.deleteMany();
+  await prisma.clientProfile.deleteMany();
   await prisma.user.deleteMany();
+  // Predefined lists can be deleted after profiles/users
+  await prisma.service.deleteMany();
+  await prisma.practiceCourt.deleteMany();
+  await prisma.practiceArea.deleteMany();
+  // OTPs are transient, clear them too if needed
+  await prisma.otp.deleteMany();
+  console.log('Existing data cleared.');
 
-  // Seed lawyers
-  for (const lawyerData of Object.values(mockLawyers)) {
-    // Create user first
-    const user = await prisma.user.create({
-      data: {
-        phoneNumber: lawyerData.phone,
-        name: lawyerData.name,
-        email: lawyerData.email,
-        role: 'LAWYER',
-      },
-    });
+  // --- Seed Predefined Lists ---
+  console.log('Seeding predefined lists...');
+  await prisma.practiceArea.createMany({ data: practiceAreas });
+  await prisma.practiceCourt.createMany({ data: practiceCourts });
+  await prisma.service.createMany({ data: services });
+  console.log('Predefined lists seeded.');
 
-    // Create lawyer with reference to user
-    const lawyer = await prisma.lawyer.create({
-      data: {
-        name: lawyerData.name,
-        photo: lawyerData.photo,
-        practiceAreas: lawyerData.practiceAreas,
-        location: lawyerData.location,
-        experience: lawyerData.experience,
-        email: lawyerData.email,
-        phone: lawyerData.phone,
-        bio: lawyerData.bio,
-        consultFee: lawyerData.consultFee,
-        barId: lawyerData.barId,
-        userId: user.id,
-      },
-    });
+  // --- Seed Users ---
+  console.log('Seeding users...');
+  // Need to handle potential DateTime fields if defaults aren't sufficient
 
-    // Create education record (now a single object instead of an array)
-    await prisma.education.create({
-      data: {
-        degree: lawyerData.education.degree,
-        institution: lawyerData.education.institution,
-        year: lawyerData.education.year,
-        lawyerId: lawyer.id,
-      },
-    });
+  
+  const userData = users.map((user) => ({
+    ...user,
+    // Ensure createdAt/updatedAt are handled if not defaulted by Prisma/DB
+  }));
+  await prisma.user.createMany({ data: userData });
+  console.log('Users seeded.');
 
-    // Create practice court record
-    await prisma.practiceCourt.create({
-      data: {
-        primary: lawyerData.practiceCourts.primary,
-        secondary: lawyerData.practiceCourts.secondary,
-        lawyerId: lawyer.id,
-      },
-    });
-  }
+  // --- Seed Profiles ---
+  console.log('Seeding profiles...');
+  await prisma.clientProfile.createMany({ data: clientProfiles });
+  // Lawyer profiles might need adjustments if fields aren't nullable or defaulted
+  const lawyerProfileData = lawyerProfiles.map((profile) => ({
+    ...profile,
+    // Ensure optional fields are handled correctly (e.g., consultFee might need default or explicit null)
+    consultFee: profile.consultFee ?? null, // Example: handle optional Int
+  }));
+  await prisma.lawyerProfile.createMany({ data: lawyerProfileData });
+  console.log('Profiles seeded.');
 
-  console.log('Seeding completed.');
+  // --- Seed Lawyer Details (Education) ---
+  console.log('Seeding education...');
+  // Explicitly pick only the fields needed for the Education model
+  const educationData = educations.map((edu) => ({
+    id: edu.id,
+    lawyerProfileId: edu.lawyerProfileId,
+    institution: edu.institution,
+    degree: edu.degree,
+    // Prisma expects Int for year based on schema
+    year: edu.graduationYear, // Correctly maps graduationYear to year
+  }));
+  await prisma.education.createMany({ data: educationData });
+  console.log('Education seeded.');
+
+  // --- Seed Join Tables ---
+  console.log('Seeding join tables...');
+  await prisma.lawyerPracticeArea.createMany({ data: lawyerPracticeAreas });
+  await prisma.lawyerPracticeCourt.createMany({ data: lawyerPracticeCourts });
+  await prisma.lawyerService.createMany({ data: lawyerServices });
+  console.log('Join tables seeded.');
+
+  // --- Seed Interactions ---
+  console.log('Seeding interactions...');
+  await prisma.savedLawyer.createMany({ data: savedLawyers });
+  await prisma.consultationRequest.createMany({ data: consultationRequests });
+  console.log('Interactions seeded.');
+
+  console.log('Seeding finished.');
 }
 
 main()

@@ -1,185 +1,189 @@
-// Types
-export type LawyerProfile = {
-  id: string;
-  name: string;
-  photo: string;
-  practiceAreas: string[];
-  location: string;
-  experience: number;
-  email: string;
-  phone: string;
-  bio: string;
-  consultFee: number;
-  education: {
-    degree: string;
-    institution: string;
-    year: string;
-  };
-  barId: string;
-  practiceCourts: {
-    primary: string;
-    secondary?: string;
-  };
-};
+import { Role, RequestStatus } from '@prisma/client';
 
-export type Lawyer = {
-  id: string;
-  name: string;
-  photo: string;
-  practiceAreas: string[];
-  practiceCourts: {
-    primary: string;
-    secondary?: string;
-  };
-  location: string;
-  consultFee: number;
-  experience: number;
-};
+// --- Predefined Lists ---
 
-// Mock data for lawyer profiles
-const mockLawyerProfile: LawyerProfile = {
-  id: '1',
-  name: 'Sarah Johnson',
-  photo:
-    'https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=1000&auto=format&fit=crop',
-  practiceAreas: ['Civil Law'],
-  location: 'New York, NY',
-  experience: 12,
-  email: 'sarah.johnson@advonex.com',
-  phone: '(555) 123-4567',
-  consultFee: 300,
-  bio: 'Sarah Johnson is a highly experienced attorney specializing in civil and family law. With over 12 years of practice, she has successfully handled numerous complex cases and is known for her dedication to client advocacy and thorough approach to legal matters.',
-  education: {
-    degree: 'Juris Doctor',
-    institution: 'Harvard Law School',
-    year: '2011',
-  },
-  barId: 'NY12345678',
-  practiceCourts: {
-    primary: 'New York Supreme Court',
-    secondary: 'New York Family Court',
-  },
-};
+export const practiceAreas = [
+  { id: 'area-1', name: 'Family Law' },
+  { id: 'area-2', name: 'Corporate Law' },
+  { id: 'area-3', name: 'Criminal Defense' },
+  { id: 'area-4', name: 'Real Estate Law' },
+  { id: 'area-5', name: 'Intellectual Property' },
+];
 
-// Mock data for all lawyer profiles
-export const mockLawyers: Record<string, LawyerProfile> = {
-  '1': mockLawyerProfile,
-  '2': {
-    id: '2',
-    name: 'Michael Chen',
-    photo:
-      'https://images.unsplash.com/photo-1556157382-97eda2d62296?q=80&w=1000&auto=format&fit=crop',
-    practiceAreas: ['Corporate Law'],
-    location: 'San Francisco, CA',
-    experience: 15,
-    email: 'michael.chen@advonex.com',
-    phone: '(555) 234-5678',
-    consultFee: 350,
-    bio: 'Michael Chen is a corporate law specialist with 15 years of experience advising businesses from startups to Fortune 500 companies. He provides strategic legal counsel on tax matters, mergers and acquisitions, and corporate governance.',
-    education: {
-      degree: 'Juris Doctor',
-      institution: 'Stanford Law School',
-      year: '2008',
-    },
-    barId: 'CA87654321',
-    practiceCourts: {
-      primary: 'California Superior Court',
-      secondary: 'U.S. District Court, Northern District of California',
-    },
+export const practiceCourts = [
+  { id: 'court-1', name: 'Supreme Court of Thailand' },
+  { id: 'court-2', name: 'delhi High Court - Division A' },
+  { id: 'court-3', name: 'District Court - Sector 7G' },
+  { id: 'court-4', name: 'Small Claims Court - Metro Area' },
+];
+
+export const services = [
+  { id: 'service-1', name: 'Consultation', isPredefined: true },
+  { id: 'service-2', name: 'Document Review', isPredefined: true },
+  { id: 'service-3', name: 'Contract Drafting', isPredefined: true },
+  { id: 'service-4', name: 'Litigation Support', isPredefined: true },
+  // Example of a potentially non-predefined service a lawyer might add later
+  // { id: 'service-5', name: 'Custom Legal Research', isPredefined: false },
+];
+
+// --- Mock Users ---
+// Note: In a real seed, phone numbers should be unique and realistic.
+// We'll use simple IDs for linking profiles easily here.
+
+export const users = [
+  // Clients
+  {
+    id: 'user-client-1',
+    phoneNumber: '+10000000001',
+    role: Role.CLIENT,
+    registrationPending: false, // Assume client completed minimal profile
   },
-  '3': {
-    id: '3',
-    name: 'David Rodriguez',
-    photo:
-      'https://images.unsplash.com/photo-1615109398623-88346a601842?q=80&w=1000&auto=format&fit=crop',
-    practiceAreas: ['Criminal Law'],
-    location: 'Chicago, IL',
-    experience: 8,
-    email: 'david.rodriguez@advonex.com',
-    phone: '(555) 345-6789',
-    consultFee: 275,
-    bio: 'David Rodriguez specializes in criminal defense and civil rights cases. With 8 years of experience, he is committed to protecting the rights of his clients and ensuring fair treatment under the law.',
-    education: {
-      degree: 'Juris Doctor',
-      institution: 'University of Chicago Law School',
-      year: '2015',
-    },
-    barId: 'IL98765432',
-    practiceCourts: {
-      primary: 'Illinois Circuit Court',
-      secondary: 'U.S. District Court, Northern District of Illinois',
-    },
+  {
+    id: 'user-client-2',
+    phoneNumber: '+10000000002',
+    role: Role.CLIENT,
+    registrationPending: true, // Assume client just registered
   },
-  '4': {
-    id: '4',
-    name: 'Emily Parker',
-    photo:
-      'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=1000&auto=format&fit=crop',
-    practiceAreas: ['Employment Law'],
-    location: 'Boston, MA',
+  // Lawyers
+  {
+    id: 'user-lawyer-1',
+    phoneNumber: '+10000000011',
+    role: Role.LAWYER,
+    registrationPending: false, // Assume lawyer completed profile
+  },
+  {
+    id: 'user-lawyer-2',
+    phoneNumber: '+10000000012',
+    role: Role.LAWYER,
+    registrationPending: false, // Assume lawyer completed profile
+  },
+  {
+    id: 'user-lawyer-3',
+    phoneNumber: '+10000000013',
+    role: Role.LAWYER,
+    registrationPending: true, // Assume lawyer just registered, needs profile completion
+  },
+];
+
+// --- Mock Profiles ---
+
+export const clientProfiles = [
+  {
+    id: 'profile-client-1',
+    userId: 'user-client-1', // Link to user-client-1
+    name: 'Alice Adams',
+    email: 'alice.adams@email.com',
+    photo: 'https://example.com/photos/alice.jpg',
+  },
+  // Client 2 has no profile details yet as registrationPending is true
+];
+
+export const lawyerProfiles = [
+  {
+    id: 'profile-lawyer-1',
+    userId: 'user-lawyer-1', // Link to user-lawyer-1
+    photo: 'https://example.com/photos/bob.jpg',
+    location: 'Example City, ExampleLand',
     experience: 10,
-    email: 'emily.parker@advonex.com',
-    phone: '(555) 456-7890',
-    consultFee: 325,
-    bio: 'Emily Parker is an employment law specialist with 10 years of experience representing both employers and employees. She handles cases involving workplace discrimination, harassment, wrongful termination, and wage disputes.',
-    education: {
-      degree: 'Juris Doctor',
-      institution: 'Boston University School of Law',
-      year: '2013',
-    },
-    barId: 'MA98765432',
-    practiceCourts: {
-      primary: 'Massachusetts Superior Court',
-      secondary: 'Massachusetts District Court',
-    },
+    bio: 'Experienced corporate lawyer specializing in mergers and acquisitions.',
+    consultFee: 300,
+    barId: 'BAR12345',
+    isVerified: true,
+    specializationId: 'area-2', // Corporate Law
+    primaryCourtId: 'court-2', // ExampleLand High Court - Division A
   },
-  '5': {
-    id: '5',
-    name: 'James Wilson',
-    photo:
-      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1000&auto=format&fit=crop',
-    practiceAreas: ['Contract Law'],
-    location: 'Los Angeles, CA',
-    experience: 14,
-    email: 'james.wilson@advonex.com',
-    phone: '(555) 567-8901',
-    consultFee: 400,
-    bio: 'James Wilson specializes in real estate and contract law with 14 years of experience. He assists clients with property transactions, lease agreements, contract negotiations, and dispute resolution.',
-    education: {
-      degree: 'Juris Doctor',
-      institution: 'UCLA School of Law',
-      year: '2009',
-    },
-    barId: 'CA98765432',
-    practiceCourts: {
-      primary: 'California Superior Court',
-      secondary: 'California Court of Appeal',
-    },
+  {
+    id: 'profile-lawyer-2',
+    userId: 'user-lawyer-2', // Link to user-lawyer-2
+    photo: 'https://example.com/photos/charlie.jpg',
+    location: 'Metro Area, ExampleLand',
+    experience: 5,
+    bio: 'Dedicated criminal defense attorney with a focus on client rights.',
+    consultFee: 200,
+    barId: 'BAR67890',
+    isVerified: false, // Not yet verified
+    specializationId: 'area-3', // Criminal Defense
+    primaryCourtId: 'court-3', // District Court - Sector 7G
   },
-  '6': {
-    id: '6',
-    name: 'Maria Garcia',
-    photo:
-      'https://images.unsplash.com/photo-1589386417686-0d34b5903d23?q=80&w=1000&auto=format&fit=crop',
-    practiceAreas: ['Immigration Law'],
-    location: 'Miami, FL',
-    experience: 9,
-    email: 'maria.garcia@advonex.com',
-    phone: '(555) 678-9012',
-    consultFee: 290,
-    bio: 'Maria Garcia is an immigration law attorney with 9 years of experience helping clients navigate the complex U.S. immigration system. She handles visa applications, green card processes, citizenship applications, and deportation defense.',
-    education: {
-      degree: 'Juris Doctor',
-      institution: 'University of Miami School of Law',
-      year: '2014',
-    },
-    barId: 'FL12345678',
-    practiceCourts: {
-      primary: 'Florida Circuit Court',
-      secondary: 'U.S. Immigration Court',
-    },
-  },
-};
+  // Lawyer 3 has no profile details yet as registrationPending is true
+];
 
-// For the lawyers listing page
-export const mockLawyersList = Object.values(mockLawyers);
+// --- Mock Lawyer Details ---
+
+export const educations = [
+  {
+    id: 'edu-lawyer-1',
+    lawyerProfileId: 'profile-lawyer-1', // Link to lawyer 1
+    institution: 'Example University School of Law',
+    degree: 'Juris Doctor (JD)',
+    graduationYear: 2014,
+  },
+  {
+    id: 'edu-lawyer-2',
+    lawyerProfileId: 'profile-lawyer-2', // Link to lawyer 2
+    institution: 'Metro Law College',
+    degree: 'Juris Doctor (JD)',
+    graduationYear: 2019,
+  },
+];
+
+// --- Mock Join Table Data (Many-to-Many) ---
+
+export const lawyerPracticeAreas = [
+  // Lawyer 1 (Corporate) also does Real Estate
+  { lawyerProfileId: 'profile-lawyer-1', practiceAreaId: 'area-2' }, // Corporate (matches specialization)
+  { lawyerProfileId: 'profile-lawyer-1', practiceAreaId: 'area-4' }, // Real Estate
+
+  // Lawyer 2 (Criminal) also does Family Law
+  { lawyerProfileId: 'profile-lawyer-2', practiceAreaId: 'area-3' }, // Criminal (matches specialization)
+  { lawyerProfileId: 'profile-lawyer-2', practiceAreaId: 'area-1' }, // Family Law
+];
+
+export const lawyerPracticeCourts = [
+  // Lawyer 1 (High Court A) also practices in Supreme Court
+  { lawyerProfileId: 'profile-lawyer-1', practiceCourtId: 'court-2' }, // High Court A (matches primary)
+  { lawyerProfileId: 'profile-lawyer-1', practiceCourtId: 'court-1' }, // Supreme Court
+
+  // Lawyer 2 (District 7G) also practices in Small Claims
+  { lawyerProfileId: 'profile-lawyer-2', practiceCourtId: 'court-3' }, // District 7G (matches primary)
+  { lawyerProfileId: 'profile-lawyer-2', practiceCourtId: 'court-4' }, // Small Claims
+];
+
+export const lawyerServices = [
+  // Lawyer 1 offers Consultation, Contract Drafting
+  { lawyerProfileId: 'profile-lawyer-1', serviceId: 'service-1' },
+  { lawyerProfileId: 'profile-lawyer-1', serviceId: 'service-3' },
+
+  // Lawyer 2 offers Consultation, Document Review, Litigation Support
+  { lawyerProfileId: 'profile-lawyer-2', serviceId: 'service-1' },
+  { lawyerProfileId: 'profile-lawyer-2', serviceId: 'service-2' },
+  { lawyerProfileId: 'profile-lawyer-2', serviceId: 'service-4' },
+];
+
+// --- Mock Interaction Data ---
+
+export const savedLawyers = [
+  // Client 1 saved Lawyer 1
+  { clientProfileId: 'profile-client-1', lawyerProfileId: 'profile-lawyer-1' },
+  // Client 1 also saved Lawyer 2
+  { clientProfileId: 'profile-client-1', lawyerProfileId: 'profile-lawyer-2' },
+];
+
+export const consultationRequests = [
+  // Client 1 requested consultation from Lawyer 1 (Pending)
+  {
+    id: 'req-1',
+    clientProfileId: 'profile-client-1',
+    lawyerProfileId: 'profile-lawyer-1',
+    message: 'Need advice on incorporating a new business.',
+    status: RequestStatus.PENDING,
+  },
+  // Client 1 requested consultation from Lawyer 2 (Viewed)
+  {
+    id: 'req-2',
+    clientProfileId: 'profile-client-1',
+    lawyerProfileId: 'profile-lawyer-2',
+    message: 'Question about a recent traffic citation.',
+    status: RequestStatus.VIEWED,
+  },
+];
