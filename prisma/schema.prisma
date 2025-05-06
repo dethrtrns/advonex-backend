@@ -14,15 +14,38 @@ datasource db {
 // Minimal User model for authentication and core identification
 model User {
   id                  String   @id @default(uuid())
-  phoneNumber         String   @unique // Mandatory for login
-  role                Role     @default(CLIENT) // Mandatory, determines profile type (set during creation)
-  registrationPending Boolean  @default(true)
+  phoneNumber         String?  @unique // Optional for email-based users
+  email               String?  @unique // Optional for phone-based users
+  accountStatus       AccountStatus @default(ACTIVE) // To manage user account state
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
+  lastLogin           DateTime? // Optional field to track last login time
 
-  // A User links to EITHER a ClientProfile OR a LawyerProfile
+// A User may optionally have both a ClientProfile and a LawyerProfile
   clientProfile ClientProfile?
   lawyerProfile LawyerProfile?
+
+  refreshTokens RefreshToken[] // A user can have multiple active refresh tokens (e.g., from different devices)
+  
+  // New relation for UserRole
+  userRoles UserRole[]
+}
+
+// New model for Role management
+model UserRole {
+  id        String   @id @default(uuid())
+  role      Role
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relation to User
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  // Ensure a user can have each role only once (though can be active/inactive)
+  @@unique([userId, role])
+  @@index([userId])
 }
 
 // New model for Client-specific details
@@ -30,7 +53,7 @@ model ClientProfile {
   id        String   @id @default(uuid())
   name      String? // Optional details
   photo     String?
-  email     String?  @unique // Optional, kept unique for now
+  registrationPending Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -45,6 +68,7 @@ model ClientProfile {
 // Holds Lawyer-specific details
 model LawyerProfile {
   id         String   @id @default(uuid())
+  name       String?  // Optional name field
   photo      String?
   location   String?
   experience Int?
@@ -52,6 +76,7 @@ model LawyerProfile {
   consultFee Int?
   barId      String?
   isVerified Boolean  @default(false)
+  registrationPending Boolean  @default(true)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -133,8 +158,8 @@ model LawyerPracticeArea {
 // Model for predefined Practice Courts
 model PracticeCourt {
   id        String   @id @default(uuid())
-  name      String   @unique // e.g., "Supreme Court", "District Court - City Name"
-  location  String? // Optional location detail if needed
+  name      String   @unique
+  location  String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -204,34 +229,65 @@ model SavedLawyer {
 
 // Model for Client Consultation Requests
 model ConsultationRequest {
-  id              String        @id @default(uuid())
-  clientProfileId String
-  lawyerProfileId String
-  message         String
-  status          RequestStatus @default(PENDING)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-
-  client        ClientProfile @relation("ClientRequests", fields: [clientProfileId], references: [id], onDelete: Cascade)
-  lawyerProfile LawyerProfile @relation("LawyerRequests", fields: [lawyerProfileId], references: [id], onDelete: Cascade)
+  id                String         @id @default(cuid())
+  clientProfileId   String
+  lawyerProfileId   String
+  message           String
+  status            RequestStatus  @default(PENDING)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  response          String?
+  responseTimestamp DateTime?
+  responseStatus    ResponseStatus @default(PENDING)
+  responseReason    String?
+  clientProfile     ClientProfile  @relation("ClientRequests", fields: [clientProfileId], references: [id], onDelete: Cascade)
+  lawyerProfile     LawyerProfile  @relation("LawyerRequests", fields: [lawyerProfileId], references: [id], onDelete: Cascade)
 
   @@index([clientProfileId])
   @@index([lawyerProfileId])
-  @@index([status])
 }
 
 // --- Authentication Support ---
 
 // Model for storing OTPs during phone verification/login
-model Otp {
+model PhoneOtp {
   id          String   @id @default(uuid())
-  phoneNumber String
-  otp         String
+  phoneNumber String   // phoneNumber is not unique, handle uniqueness in application logic
+  otp         String   
   expiresAt   DateTime
-  role        Role // Store intended role with OTP
+  role        Role     // Store intended role with OTP
   createdAt   DateTime @default(now())
+  // Add updatedAt for consistency, Prisma handles it automatically
+  updatedAt   DateTime @updatedAt
 
   @@index([phoneNumber, expiresAt]) // Index for efficient lookup/cleanup
+}
+
+// Model for storing Refresh Tokens
+model RefreshToken {
+  id        String   @id @default(uuid())
+  hashedToken String   // Store a hashed version of the token
+  userId    String   // Link to the User
+  expiresAt DateTime // Expiry date of this refresh token
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade) // Relation to User
+
+  @@index([userId]) // Index for faster lookup by user
+}
+
+model EmailOtp {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  otp       String
+  expiresAt DateTime
+  isUsed    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+  @@index([expiresAt])
 }
 
 // --- Enums ---
@@ -247,4 +303,16 @@ enum RequestStatus {
   VIEWED
   RESPONDED
   CLOSED
+}
+
+enum AccountStatus {
+  ACTIVE
+  SUSPENDED // Temporarily disabled by admin
+  DEACTIVATED // User chose to deactivate, or permanent admin action
+}
+
+enum ResponseStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
 }

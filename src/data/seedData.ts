@@ -1,29 +1,126 @@
-import { Role, RequestStatus } from '@prisma/client';
+import { Role, RequestStatus, AccountStatus } from '@prisma/client';
 
 // --- Predefined Lists ---
 
 export const practiceAreas = [
-  { id: 'area-1', name: 'Family Law' },
-  { id: 'area-2', name: 'Corporate Law' },
-  { id: 'area-3', name: 'Criminal Defense' },
-  { id: 'area-4', name: 'Real Estate Law' },
-  { id: 'area-5', name: 'Intellectual Property' },
+  {
+    id: '550e8400-e29b-41d4-a716-446655440000', // Corporate Law
+    name: 'Corporate Law',
+    description: 'Legal matters related to business and corporate entities',
+  },
+  {
+    id: '550e8400-e29b-41d4-a716-446655440001', // Criminal Law
+    name: 'Criminal Law',
+    description: 'Legal matters related to criminal offenses and defense',
+  },
+  {
+    id: '550e8400-e29b-41d4-a716-446655440002', // Family Law
+    name: 'Family Law',
+    description:
+      'Legal matters related to family relationships and domestic issues',
+  },
+  {
+    id: '550e8400-e29b-41d4-a716-446655440003', // Real Estate Law
+    name: 'Real Estate Law',
+    description:
+      'Legal matters related to property and real estate transactions',
+  },
+  {
+    id: '550e8400-e29b-41d4-a716-446655440004', // Intellectual Property Law
+    name: 'Intellectual Property Law',
+    description: 'Legal matters related to patents, trademarks, and copyrights',
+  },
 ];
 
 export const practiceCourts = [
-  { id: 'court-1', name: 'Supreme Court of Thailand' },
-  { id: 'court-2', name: 'delhi High Court - Division A' },
-  { id: 'court-3', name: 'District Court - Sector 7G' },
-  { id: 'court-4', name: 'Small Claims Court - Metro Area' },
+  {
+    id: '550e8400-e29b-41d4-a716-446655440005', // Supreme Court
+    name: 'Supreme Court',
+    location: 'New Delhi',
+  },
+  {
+    id: '550e8400-e29b-41d4-a716-446655440006', // High Court
+    name: 'High Court',
+    location: 'Mumbai',
+  },
+  {
+    id: '550e8400-e29b-41d4-a716-446655440007', // District Court
+    name: 'District Court',
+    location: 'Bangalore',
+  },
+  {
+    id: '550e8400-e29b-41d4-a716-446655440008', // Family Court
+    name: 'Family Court',
+    location: 'Chennai',
+  },
+  {
+    id: '550e8400-e29b-41d4-a716-446655440009', // Consumer Court
+    name: 'Consumer Court',
+    location: 'Kolkata',
+  },
 ];
 
 export const services = [
-  { id: 'service-1', name: 'Consultation', isPredefined: true },
-  { id: 'service-2', name: 'Document Review', isPredefined: true },
-  { id: 'service-3', name: 'Contract Drafting', isPredefined: true },
-  { id: 'service-4', name: 'Litigation Support', isPredefined: true },
-  // Example of a potentially non-predefined service a lawyer might add later
-  // { id: 'service-5', name: 'Custom Legal Research', isPredefined: false },
+  {
+    id: '550e8400-e29b-41d4-a716-446655440010', // Consultation
+    name: 'Consultation',
+    description: 'Initial legal consultation',
+    isPredefined: true,
+  },
+  {
+    id: '550e8400-e29b-41d4-a716-446655440011', // Document Review
+    name: 'Document Review',
+    description: 'Review of legal documents',
+    isPredefined: true,
+  },
+  {
+    id: '550e8400-e29b-41d4-a716-446655440012', // Contract Drafting
+    name: 'Contract Drafting',
+    description: 'Drafting legal contracts',
+    isPredefined: true,
+  },
+  {
+    id: '550e8400-e29b-41d4-a716-446655440013', // Litigation Support
+    name: 'Litigation Support',
+    description: 'Support during legal proceedings',
+    isPredefined: true,
+  },
+  {
+    id: '550e8400-e29b-41d4-a716-446655440014', // Legal Research
+    name: 'Legal Research',
+    description: 'In-depth legal research',
+    isPredefined: true,
+  },
+  {
+    id: '550e8400-e29b-41d4-a716-446655440015', // Mediation
+    name: 'Mediation',
+    description: 'Legal mediation services',
+    isPredefined: true,
+  },
+  {
+    id: '550e8400-e29b-41d4-a716-446655440016', // Arbitration
+    name: 'Arbitration',
+    description: 'Legal arbitration services',
+    isPredefined: true,
+  },
+  {
+    id: '550e8400-e29b-41d4-a716-446655440017', // Notary Services
+    name: 'Notary Services',
+    description: 'Notary public services',
+    isPredefined: true,
+  },
+  {
+    id: '550e8400-e29b-41d4-a716-446655440018', // Legal Translation
+    name: 'Legal Translation',
+    description: 'Translation of legal documents',
+    isPredefined: true,
+  },
+  {
+    id: '550e8400-e29b-41d4-a716-446655440019', // Legal Opinion
+    name: 'Legal Opinion',
+    description: 'Expert legal opinion',
+    isPredefined: true,
+  },
 ];
 
 // --- Mock Users ---
@@ -33,157 +130,310 @@ export const services = [
 export const users = [
   // Clients
   {
-    id: 'user-client-1',
-    phoneNumber: '+10000000001',
-    role: Role.CLIENT,
-    registrationPending: false, // Assume client completed minimal profile
+    id: '550e8400-e29b-41d4-a716-446655440020', // Client 1
+    phoneNumber: '+66810000001',
+    email: 'alice.adams@email.com',
+    accountStatus: AccountStatus.ACTIVE,
   },
   {
-    id: 'user-client-2',
-    phoneNumber: '+10000000002',
-    role: Role.CLIENT,
-    registrationPending: true, // Assume client just registered
+    id: '550e8400-e29b-41d4-a716-446655440021', // Client 2
+    phoneNumber: '+66810000002',
+    email: 'bob.brown@email.com',
+    accountStatus: AccountStatus.ACTIVE,
+  },
+  {
+    id: '550e8400-e29b-41d4-a716-446655440022', // Client 3
+    phoneNumber: '+66810000003',
+    email: 'carol.clark@email.com',
+    accountStatus: AccountStatus.ACTIVE,
   },
   // Lawyers
   {
-    id: 'user-lawyer-1',
-    phoneNumber: '+10000000011',
-    role: Role.LAWYER,
-    registrationPending: false, // Assume lawyer completed profile
+    id: '550e8400-e29b-41d4-a716-446655440023', // Lawyer 1
+    phoneNumber: '+66810000011',
+    email: 'john.smith@email.com',
+    accountStatus: AccountStatus.ACTIVE,
   },
   {
-    id: 'user-lawyer-2',
-    phoneNumber: '+10000000012',
-    role: Role.LAWYER,
-    registrationPending: false, // Assume lawyer completed profile
+    id: '550e8400-e29b-41d4-a716-446655440024', // Lawyer 2
+    phoneNumber: '+66810000012',
+    email: 'sarah.johnson@email.com',
+    accountStatus: AccountStatus.ACTIVE,
   },
   {
-    id: 'user-lawyer-3',
-    phoneNumber: '+10000000013',
-    role: Role.LAWYER,
-    registrationPending: true, // Assume lawyer just registered, needs profile completion
+    id: '550e8400-e29b-41d4-a716-446655440025', // Lawyer 3
+    phoneNumber: '+66810000013',
+    email: 'michael.brown@email.com',
+    accountStatus: AccountStatus.ACTIVE,
   },
+];
+
+// User Roles
+export const userRoles = [
+  { userId: '550e8400-e29b-41d4-a716-446655440020', role: Role.CLIENT },
+  { userId: '550e8400-e29b-41d4-a716-446655440021', role: Role.CLIENT },
+  { userId: '550e8400-e29b-41d4-a716-446655440022', role: Role.CLIENT },
+  { userId: '550e8400-e29b-41d4-a716-446655440023', role: Role.LAWYER },
+  { userId: '550e8400-e29b-41d4-a716-446655440024', role: Role.LAWYER },
+  { userId: '550e8400-e29b-41d4-a716-446655440025', role: Role.LAWYER },
 ];
 
 // --- Mock Profiles ---
 
 export const clientProfiles = [
   {
-    id: 'profile-client-1',
-    userId: 'user-client-1', // Link to user-client-1
+    id: '550e8400-e29b-41d4-a716-446655440026', // Client Profile 1
+    userId: '550e8400-e29b-41d4-a716-446655440020',
     name: 'Alice Adams',
-    email: 'alice.adams@email.com',
     photo: 'https://example.com/photos/alice.jpg',
+    registrationPending: false,
   },
-  // Client 2 has no profile details yet as registrationPending is true
+  {
+    id: '550e8400-e29b-41d4-a716-446655440027', // Client Profile 2
+    userId: '550e8400-e29b-41d4-a716-446655440021',
+    name: 'Bob Brown',
+    photo: 'https://example.com/photos/bob.jpg',
+    registrationPending: false,
+  },
+  {
+    id: '550e8400-e29b-41d4-a716-446655440028', // Client Profile 3
+    userId: '550e8400-e29b-41d4-a716-446655440022',
+    name: 'Carol Clark',
+    photo: 'https://example.com/photos/carol.jpg',
+    registrationPending: true,
+  },
 ];
 
 export const lawyerProfiles = [
   {
-    id: 'profile-lawyer-1',
-    userId: 'user-lawyer-1', // Link to user-lawyer-1
-    photo: 'https://example.com/photos/bob.jpg',
-    location: 'Example City, ExampleLand',
+    id: '550e8400-e29b-41d4-a716-446655440029', // Lawyer Profile 1
+    userId: '550e8400-e29b-41d4-a716-446655440023',
+    name: 'John Smith',
+    photo: 'https://example.com/photos/lawyer1.jpg',
+    location: 'Bangkok, Thailand',
     experience: 10,
     bio: 'Experienced corporate lawyer specializing in mergers and acquisitions.',
-    consultFee: 300,
+    consultFee: 3000,
     barId: 'BAR12345',
     isVerified: true,
-    specializationId: 'area-2', // Corporate Law
-    primaryCourtId: 'court-2', // ExampleLand High Court - Division A
+    registrationPending: false,
+    specializationName: 'Corporate Law',
+    primaryCourtName: 'High Court',
   },
   {
-    id: 'profile-lawyer-2',
-    userId: 'user-lawyer-2', // Link to user-lawyer-2
-    photo: 'https://example.com/photos/charlie.jpg',
-    location: 'Metro Area, ExampleLand',
+    id: '550e8400-e29b-41d4-a716-446655440030', // Lawyer Profile 2
+    userId: '550e8400-e29b-41d4-a716-446655440024',
+    name: 'Sarah Johnson',
+    photo: 'https://example.com/photos/lawyer2.jpg',
+    location: 'Chiang Mai, Thailand',
     experience: 5,
     bio: 'Dedicated criminal defense attorney with a focus on client rights.',
-    consultFee: 200,
+    consultFee: 2000,
     barId: 'BAR67890',
-    isVerified: false, // Not yet verified
-    specializationId: 'area-3', // Criminal Defense
-    primaryCourtId: 'court-3', // District Court - Sector 7G
+    isVerified: false,
+    registrationPending: false,
+    specializationName: 'Criminal Law',
+    primaryCourtName: 'District Court',
   },
-  // Lawyer 3 has no profile details yet as registrationPending is true
+  {
+    id: '550e8400-e29b-41d4-a716-446655440031', // Lawyer Profile 3
+    userId: '550e8400-e29b-41d4-a716-446655440025',
+    name: 'Michael Brown',
+    photo: 'https://example.com/photos/lawyer3.jpg',
+    location: 'Phuket, Thailand',
+    experience: 8,
+    bio: 'Specialized in real estate and property law with extensive experience in coastal properties.',
+    consultFee: 2500,
+    barId: 'BAR13579',
+    isVerified: true,
+    registrationPending: false,
+    specializationName: 'Real Estate Law',
+    primaryCourtName: 'Family Court',
+  },
 ];
 
 // --- Mock Lawyer Details ---
 
 export const educations = [
   {
-    id: 'edu-lawyer-1',
-    lawyerProfileId: 'profile-lawyer-1', // Link to lawyer 1
-    institution: 'Example University School of Law',
-    degree: 'Juris Doctor (JD)',
-    graduationYear: 2014,
+    id: '550e8400-e29b-41d4-a716-446655440032', // Education 1
+    lawyerProfileId: '550e8400-e29b-41d4-a716-446655440029',
+    institution: 'Thammasat University Faculty of Law',
+    degree: 'Bachelor of Laws (LL.B.)',
+    year: 2014,
   },
   {
-    id: 'edu-lawyer-2',
-    lawyerProfileId: 'profile-lawyer-2', // Link to lawyer 2
-    institution: 'Metro Law College',
-    degree: 'Juris Doctor (JD)',
-    graduationYear: 2019,
+    id: '550e8400-e29b-41d4-a716-446655440033', // Education 2
+    lawyerProfileId: '550e8400-e29b-41d4-a716-446655440030',
+    institution: 'Chulalongkorn University Faculty of Law',
+    degree: 'Bachelor of Laws (LL.B.)',
+    year: 2019,
+  },
+  {
+    id: '550e8400-e29b-41d4-a716-446655440034', // Education 3
+    lawyerProfileId: '550e8400-e29b-41d4-a716-446655440031',
+    institution: 'Mahidol University Faculty of Law',
+    degree: 'Bachelor of Laws (LL.B.)',
+    year: 2016,
   },
 ];
 
 // --- Mock Join Table Data (Many-to-Many) ---
 
 export const lawyerPracticeAreas = [
-  // Lawyer 1 (Corporate) also does Real Estate
-  { lawyerProfileId: 'profile-lawyer-1', practiceAreaId: 'area-2' }, // Corporate (matches specialization)
-  { lawyerProfileId: 'profile-lawyer-1', practiceAreaId: 'area-4' }, // Real Estate
+  // Lawyer 1 (Corporate) also does Real Estate and Intellectual Property
+  {
+    lawyerProfileId: '550e8400-e29b-41d4-a716-446655440029',
+    practiceAreaId: '550e8400-e29b-41d4-a716-446655440000',
+  },
+  {
+    lawyerProfileId: '550e8400-e29b-41d4-a716-446655440029',
+    practiceAreaId: '550e8400-e29b-41d4-a716-446655440003',
+  },
+  {
+    lawyerProfileId: '550e8400-e29b-41d4-a716-446655440029',
+    practiceAreaId: '550e8400-e29b-41d4-a716-446655440004',
+  },
 
   // Lawyer 2 (Criminal) also does Family Law
-  { lawyerProfileId: 'profile-lawyer-2', practiceAreaId: 'area-3' }, // Criminal (matches specialization)
-  { lawyerProfileId: 'profile-lawyer-2', practiceAreaId: 'area-1' }, // Family Law
+  {
+    lawyerProfileId: '550e8400-e29b-41d4-a716-446655440030',
+    practiceAreaId: '550e8400-e29b-41d4-a716-446655440001',
+  },
+  {
+    lawyerProfileId: '550e8400-e29b-41d4-a716-446655440030',
+    practiceAreaId: '550e8400-e29b-41d4-a716-446655440002',
+  },
+
+  // Lawyer 3 (Real Estate) also does Corporate
+  {
+    lawyerProfileId: '550e8400-e29b-41d4-a716-446655440031',
+    practiceAreaId: '550e8400-e29b-41d4-a716-446655440003',
+  },
+  {
+    lawyerProfileId: '550e8400-e29b-41d4-a716-446655440031',
+    practiceAreaId: '550e8400-e29b-41d4-a716-446655440000',
+  },
 ];
 
 export const lawyerPracticeCourts = [
-  // Lawyer 1 (High Court A) also practices in Supreme Court
-  { lawyerProfileId: 'profile-lawyer-1', practiceCourtId: 'court-2' }, // High Court A (matches primary)
-  { lawyerProfileId: 'profile-lawyer-1', practiceCourtId: 'court-1' }, // Supreme Court
+  // Lawyer 1 practices in High Court and Supreme Court
+  {
+    lawyerProfileId: '550e8400-e29b-41d4-a716-446655440029',
+    practiceCourtId: '550e8400-e29b-41d4-a716-446655440006',
+  },
+  {
+    lawyerProfileId: '550e8400-e29b-41d4-a716-446655440029',
+    practiceCourtId: '550e8400-e29b-41d4-a716-446655440005',
+  },
 
-  // Lawyer 2 (District 7G) also practices in Small Claims
-  { lawyerProfileId: 'profile-lawyer-2', practiceCourtId: 'court-3' }, // District 7G (matches primary)
-  { lawyerProfileId: 'profile-lawyer-2', practiceCourtId: 'court-4' }, // Small Claims
+  // Lawyer 2 practices in District Court and High Court
+  {
+    lawyerProfileId: '550e8400-e29b-41d4-a716-446655440030',
+    practiceCourtId: '550e8400-e29b-41d4-a716-446655440007',
+  },
+  {
+    lawyerProfileId: '550e8400-e29b-41d4-a716-446655440030',
+    practiceCourtId: '550e8400-e29b-41d4-a716-446655440006',
+  },
+
+  // Lawyer 3 practices in Family Court and High Court
+  {
+    lawyerProfileId: '550e8400-e29b-41d4-a716-446655440031',
+    practiceCourtId: '550e8400-e29b-41d4-a716-446655440008',
+  },
+  {
+    lawyerProfileId: '550e8400-e29b-41d4-a716-446655440031',
+    practiceCourtId: '550e8400-e29b-41d4-a716-446655440006',
+  },
 ];
 
 export const lawyerServices = [
-  // Lawyer 1 offers Consultation, Contract Drafting
-  { lawyerProfileId: 'profile-lawyer-1', serviceId: 'service-1' },
-  { lawyerProfileId: 'profile-lawyer-1', serviceId: 'service-3' },
+  // Lawyer 1 offers Consultation, Contract Drafting, Legal Research
+  {
+    lawyerProfileId: '550e8400-e29b-41d4-a716-446655440029',
+    serviceId: '550e8400-e29b-41d4-a716-446655440010',
+  },
+  {
+    lawyerProfileId: '550e8400-e29b-41d4-a716-446655440029',
+    serviceId: '550e8400-e29b-41d4-a716-446655440012',
+  },
+  {
+    lawyerProfileId: '550e8400-e29b-41d4-a716-446655440029',
+    serviceId: '550e8400-e29b-41d4-a716-446655440014',
+  },
 
   // Lawyer 2 offers Consultation, Document Review, Litigation Support
-  { lawyerProfileId: 'profile-lawyer-2', serviceId: 'service-1' },
-  { lawyerProfileId: 'profile-lawyer-2', serviceId: 'service-2' },
-  { lawyerProfileId: 'profile-lawyer-2', serviceId: 'service-4' },
+  {
+    lawyerProfileId: '550e8400-e29b-41d4-a716-446655440030',
+    serviceId: '550e8400-e29b-41d4-a716-446655440010',
+  },
+  {
+    lawyerProfileId: '550e8400-e29b-41d4-a716-446655440030',
+    serviceId: '550e8400-e29b-41d4-a716-446655440011',
+  },
+  {
+    lawyerProfileId: '550e8400-e29b-41d4-a716-446655440030',
+    serviceId: '550e8400-e29b-41d4-a716-446655440013',
+  },
+
+  // Lawyer 3 offers Consultation, Contract Drafting, Legal Translation
+  {
+    lawyerProfileId: '550e8400-e29b-41d4-a716-446655440031',
+    serviceId: '550e8400-e29b-41d4-a716-446655440010',
+  },
+  {
+    lawyerProfileId: '550e8400-e29b-41d4-a716-446655440031',
+    serviceId: '550e8400-e29b-41d4-a716-446655440012',
+  },
+  {
+    lawyerProfileId: '550e8400-e29b-41d4-a716-446655440031',
+    serviceId: '550e8400-e29b-41d4-a716-446655440018',
+  },
 ];
 
 // --- Mock Interaction Data ---
 
 export const savedLawyers = [
-  // Client 1 saved Lawyer 1
-  { clientProfileId: 'profile-client-1', lawyerProfileId: 'profile-lawyer-1' },
-  // Client 1 also saved Lawyer 2
-  { clientProfileId: 'profile-client-1', lawyerProfileId: 'profile-lawyer-2' },
+  // Client 1 saved Lawyer 1 and 2
+  {
+    clientProfileId: '550e8400-e29b-41d4-a716-446655440026',
+    lawyerProfileId: '550e8400-e29b-41d4-a716-446655440029',
+  },
+  {
+    clientProfileId: '550e8400-e29b-41d4-a716-446655440027',
+    lawyerProfileId: '550e8400-e29b-41d4-a716-446655440030',
+  },
+  // Client 2 saved Lawyer 3
+  {
+    clientProfileId: '550e8400-e29b-41d4-a716-446655440028',
+    lawyerProfileId: '550e8400-e29b-41d4-a716-446655440031',
+  },
 ];
 
 export const consultationRequests = [
   // Client 1 requested consultation from Lawyer 1 (Pending)
   {
-    id: 'req-1',
-    clientProfileId: 'profile-client-1',
-    lawyerProfileId: 'profile-lawyer-1',
-    message: 'Need advice on incorporating a new business.',
+    id: '550e8400-e29b-41d4-a716-446655440037', // Request 1
+    clientProfileId: '550e8400-e29b-41d4-a716-446655440026',
+    lawyerProfileId: '550e8400-e29b-41d4-a716-446655440029',
+    message: 'I need help with a corporate merger case.',
     status: RequestStatus.PENDING,
   },
   // Client 1 requested consultation from Lawyer 2 (Viewed)
   {
-    id: 'req-2',
-    clientProfileId: 'profile-client-1',
-    lawyerProfileId: 'profile-lawyer-2',
-    message: 'Question about a recent traffic citation.',
-    status: RequestStatus.VIEWED,
+    id: '550e8400-e29b-41d4-a716-446655440038', // Request 2
+    clientProfileId: '550e8400-e29b-41d4-a716-446655440027',
+    lawyerProfileId: '550e8400-e29b-41d4-a716-446655440030',
+    message: 'I need assistance with a criminal defense case.',
+    status: RequestStatus.RESPONDED,
+  },
+  // Client 2 requested consultation from Lawyer 3 (Responded)
+  {
+    id: '550e8400-e29b-41d4-a716-446655440039', // Request 3
+    clientProfileId: '550e8400-e29b-41d4-a716-446655440028',
+    lawyerProfileId: '550e8400-e29b-41d4-a716-446655440031',
+    message: 'Need help with a property purchase agreement.',
+    status: RequestStatus.RESPONDED,
   },
 ];

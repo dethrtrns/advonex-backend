@@ -27,6 +27,7 @@
     "seed": "ts-node prisma/seed.ts"
   },
   "dependencies": {
+    "@nestjs/cache-manager": "^3.0.1",
     "@nestjs/cli": "^11.0.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",
@@ -34,19 +35,27 @@
     "@nestjs/jwt": "^11.0.0",
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.0.1",
+    "@nestjs/schedule": "^6.0.0",
     "@nestjs/schematics": "^11.0.0",
     "@nestjs/swagger": "^11.0.7",
+    "@nestjs/throttler": "^6.4.0",
     "@prisma/client": "^6.5.0",
     "@types/multer": "^1.4.12",
+    "axios": "^1.9.0",
     "bcrypt": "^5.1.1",
+    "cache-manager": "^6.4.2",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
     "cloudinary": "^2.6.0",
+    "date-fns": "^4.1.0",
+    "helmet": "^8.1.0",
     "multer": "1.4.5-lts.2",
+    "nestjs-rate-limiter": "^3.1.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "prisma": "^6.5.0",
     "reflect-metadata": "^0.2.2",
+    "resend": "^4.5.0",
     "rimraf": "^6.0.1",
     "rxjs": "^7.8.1",
     "swagger-ui-express": "^5.0.1",
@@ -97,5 +106,10 @@
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "bcrypt"
+    ]
   }
 }
