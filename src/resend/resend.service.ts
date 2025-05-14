@@ -41,7 +41,9 @@ export class ResendService {
         return false;
       }
 
-      this.logger.log(`OTP email sent successfully to ${email}`);
+      this.logger.log(
+        `OTP email sent successfully to ${email} and tracking id: ${JSON.stringify(data, null, 2)}`,
+      );
       return true;
     } catch (error) {
       this.logger.error(`Error sending OTP email: ${error.message}`);

@@ -8,6 +8,7 @@ import {
   HttpException,
   HttpStatus,
   BadRequestException,
+  ForbiddenException, // Added ForbiddenException
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { RequestOtpDto } from './dto/request-otp.dto';
@@ -42,13 +43,6 @@ import {
 } from './dto/email-otp.dto';
 import { addMinutes } from 'date-fns';
 
-interface EmailMetrics {
-  totalRequests: number;
-  successfulDeliveries: number;
-  failedDeliveries: number;
-  lastError: string | null;
-}
-
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
@@ -64,12 +58,6 @@ export class AuthService {
     'outlook.com',
     'hotmail.com',
   ];
-  private emailMetrics: EmailMetrics = {
-    totalRequests: 0,
-    successfulDeliveries: 0,
-    failedDeliveries: 0,
-    lastError: null,
-  };
 
   constructor(
     private readonly prisma: PrismaService,
@@ -193,6 +181,9 @@ export class AuthService {
   async requestOtp(requestOtpDto: RequestOtpDto): Promise<PhoneOtp> {
     const { phoneNumber, role } = requestOtpDto;
     this.logger.log(`OTP requested for phone: ${phoneNumber}, role: ${role}`);
+
+    // Check rate limit for phone number
+    this.checkRateLimit(phoneNumber);
 
     const existingUserWithRoles = await this.prisma.user.findUnique({
       where: { phoneNumber },
@@ -658,161 +649,193 @@ export class AuthService {
   }
   // --- End Logout Method ---
 
-  // Function-level comment: Adds a specified role (CLIENT or LAWYER) to an existing user.
-  async addRole(
+  /**
+   * Adds a new role to the authenticated user or activates an existing one.
+   * Deactivates all other roles for the user.
+   * Generates new access and refresh tokens.
+   * @param userId The ID of the authenticated user.
+   * @param addRoleDto DTO containing the role to add/activate.
+   * @returns New access and refresh tokens.
+   * @throws {ForbiddenException} If trying to add ADMIN role.
+   * @throws {NotFoundException} If the user is not found.
+   * @throws {ConflictException} If the role is already active (as per API doc, though current logic activates).
+   * @throws {InternalServerErrorException} For other processing errors.
+   */
+  async addRoleForAuthenticatedUser(
     userId: string,
     addRoleDto: AddRoleDto,
   ): Promise<{ accessToken: string; refreshToken: string }> {
-    const { role } = addRoleDto;
+    this.logger.log(
+      `User ${userId} attempting to add/switch role to: ${addRoleDto.role}`,
+    );
 
-    // Validate that the role is either CLIENT or LAWYER (already done by DTO, but good practice)
-    if (role !== Role.CLIENT && role !== Role.LAWYER) {
+    // Prevent adding ADMIN role via this endpoint
+    if (addRoleDto.role === Role.ADMIN) {
       this.logger.warn(
-        `Attempt to add invalid role (${role}) for user ${userId}`,
+        `User ${userId} attempted to add ADMIN role. This is forbidden.`,
       );
-      throw new ConflictException(
-        'Invalid role specified. Can only add CLIENT or LAWYER.',
+      throw new ForbiddenException(
+        'ADMIN role cannot be added via this endpoint.',
       );
     }
 
-    this.logger.log(`Attempting to add role ${role} for user ID: ${userId}`);
+    // Validate that the role is either CLIENT or LAWYER
+    if (addRoleDto.role !== Role.CLIENT && addRoleDto.role !== Role.LAWYER) {
+      this.logger.warn(
+        `User ${userId} attempted to add invalid role: ${addRoleDto.role}`,
+      );
+      throw new BadRequestException(
+        `Invalid role specified. Must be CLIENT or LAWYER.`,
+      );
+    }
 
-    // Use a transaction to ensure atomicity
-    const result = await this.prisma.$transaction(async (tx) => {
-      // 1. Find the user and their existing roles
-      const user = await tx.user.findUnique({
-        where: { id: userId },
-        include: {
-          userRoles: true,
-          clientProfile: true, // Include profiles to check existence
-          lawyerProfile: true,
-        },
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        userRoles: true, // Include all roles to check existing ones
+        clientProfile: { select: { id: true } },
+        lawyerProfile: { select: { id: true } },
+      },
+    });
+
+    if (!user) {
+      this.logger.error(
+        `User with ID ${userId} not found during role addition.`,
+      );
+      throw new NotFoundException('User not found.');
+    }
+
+    // Check if the role is already active
+    const alreadyActiveRole = user.userRoles.find(
+      (ur) => ur.role === addRoleDto.role && ur.isActive,
+    );
+
+    if (alreadyActiveRole) {
+      this.logger.log(
+        `User ${userId} requested to add role ${addRoleDto.role}, which is already active. No action taken.`,
+      );
+      // If role exists and is already active, return 409 Conflict
+      throw new ConflictException(
+        `Role '${addRoleDto.role}' is already active for this user.`,
+      );
+    }
+
+    // Check if the role exists but is inactive
+    const existingInactiveRole = user.userRoles.find(
+      (ur) => ur.role === addRoleDto.role && !ur.isActive,
+    );
+
+    if (existingInactiveRole) {
+      this.logger.log(
+        `User ${userId} requested to switch to existing inactive role ${addRoleDto.role}. Proceeding to activate.`,
+      );
+      // This is the case your original requirement "if role already exist we just switch the role to active..." covers.
+      // The transaction below will handle activating it.
+    }
+
+    const tokens = await this.prisma.$transaction(async (tx) => {
+      // 1. Deactivate all existing roles for the user first
+      await tx.userRole.updateMany({
+        where: { userId: userId },
+        data: { isActive: false },
       });
+      this.logger.debug(`Deactivated all prior roles for user ${userId}`);
 
-      if (!user) {
-        this.logger.error(`User not found with ID: ${userId} during addRole`);
-        throw new NotFoundException('User not found.');
-      }
-
-      // 2. Check if the user already has the requested role active
-      const existingActiveRole = user.userRoles.find(
-        (ur) => ur.role === role && ur.isActive,
-      );
-      if (existingActiveRole) {
-        this.logger.warn(
-          `User ${userId} already has active role ${role}. Cannot add again.`,
-        );
-        throw new ConflictException(
-          `User already has the ${role} role active.`,
-        );
-      }
-
-      // 3. Check if the user has the role but inactive -> activate it
-      const existingInactiveRole = user.userRoles.find(
-        (ur) => ur.role === role && !ur.isActive,
+      // 2. Find if the target role entry exists (even if inactive now)
+      const existingRoleEntry = user.userRoles.find(
+        (ur) => ur.role === addRoleDto.role,
       );
 
-      let profileId: string | null = null;
-
-      if (existingInactiveRole) {
-        this.logger.log(
-          `Activating existing inactive role ${role} for user ${userId}`,
-        );
+      if (existingRoleEntry) {
+        // Role exists, update it to active
         await tx.userRole.update({
-          where: { id: existingInactiveRole.id },
+          where: { id: existingRoleEntry.id },
           data: { isActive: true },
         });
-        // Get the corresponding profile ID
-        profileId =
-          role === Role.CLIENT
-            ? (user.clientProfile?.id ?? null)
-            : (user.lawyerProfile?.id ?? null);
+        this.logger.log(
+          `Activated existing role ${addRoleDto.role} for user ${userId}`,
+        );
       } else {
-        // 4. Add the new role and create the corresponding profile if it doesn't exist
-        this.logger.log(`Adding new role ${role} for user ${userId}`);
+        // Role does not exist, create it and set as active
         await tx.userRole.create({
           data: {
             userId: userId,
-            role: role,
+            role: addRoleDto.role,
             isActive: true,
           },
         });
+        this.logger.log(`Added new role ${addRoleDto.role} for user ${userId}`);
+      }
 
-        // Create profile only if it doesn't exist
-        if (role === Role.CLIENT && !user.clientProfile) {
-          const clientProfile = await tx.clientProfile.create({
-            data: {
-              userId: user.id,
-              registrationPending: true,
-            },
+      // 3. Ensure profile exists for the newly active role
+      let currentProfileId: string | undefined;
+      if (addRoleDto.role === Role.CLIENT) {
+        if (!user.clientProfile) {
+          const newClientProfile = await tx.clientProfile.create({
+            data: { userId, registrationPending: true }, // Set registrationPending for new profiles
           });
-          profileId = clientProfile.id;
+          currentProfileId = newClientProfile.id;
           this.logger.log(`Created ClientProfile for user ${userId}`);
-        } else if (role === Role.LAWYER && !user.lawyerProfile) {
-          const lawyerProfile = await tx.lawyerProfile.create({
-            data: { userId },
+        } else {
+          currentProfileId = user.clientProfile.id;
+        }
+      } else if (addRoleDto.role === Role.LAWYER) {
+        if (!user.lawyerProfile) {
+          const newLawyerProfile = await tx.lawyerProfile.create({
+            data: { userId, registrationPending: true }, // Set registrationPending for new profiles
           });
-          profileId = lawyerProfile.id;
+          currentProfileId = newLawyerProfile.id;
           this.logger.log(`Created LawyerProfile for user ${userId}`);
         } else {
-          // Profile already exists, get its ID
-          profileId =
-            role === Role.CLIENT
-              ? (user.clientProfile?.id ?? null)
-              : (user.lawyerProfile?.id ?? null);
+          currentProfileId = user.lawyerProfile.id;
         }
       }
 
-      if (!profileId) {
-        // This should ideally not happen if logic is correct
+      if (!currentProfileId) {
         this.logger.error(
-          `Failed to determine profileId for user ${userId} after adding role ${role}`,
+          `Could not determine or create profile ID for user ${userId} with role ${addRoleDto.role}`,
         );
         throw new InternalServerErrorException(
-          'Could not determine profile ID after role update.',
+          'Failed to ensure profile exists for the active role.',
         );
       }
 
-      // 5. Fetch all *active* roles for the new token payload
-      const updatedActiveRoles = await tx.userRole.findMany({
-        where: { userId: userId, isActive: true },
-        select: { role: true },
-      });
-      const activeRolesEnum = updatedActiveRoles.map((ur) => ur.role);
-
-      // 6. Generate new tokens with updated roles and the *correct* profileId for the added role
+      // 4. Generate new tokens
       const payload: JwtPayload = {
         sub: userId,
+        roles: [addRoleDto.role], // Only the newly active role
+        profileId: currentProfileId,
+        email: user.email || undefined,
         phoneNumber: user.phoneNumber || undefined,
-        roles: activeRolesEnum,
-        profileId: profileId,
       };
-      const tokens = await this.generateTokens(payload);
 
-      // 7. Store the new refresh token hash
-      const hashedRefreshToken = await this.hashRefreshToken(
-        tokens.refreshToken,
+      const newTokens = await this.generateTokens(payload);
+
+      // Store the new refresh token
+      const hashedRefreshTokenForAddRole = await this.hashRefreshToken(
+        newTokens.refreshToken,
       );
-      const refreshTokenExpiry = this.calculateRefreshTokenExpiry();
+      const refreshTokenExpiryForAddRole = this.calculateRefreshTokenExpiry();
 
-      // Delete old refresh tokens before adding the new one
-      await tx.refreshToken.deleteMany({ where: { userId: userId } });
+      // Create the new refresh token record within the transaction
       await tx.refreshToken.create({
         data: {
-          userId: userId,
-          hashedToken: hashedRefreshToken,
-          expiresAt: refreshTokenExpiry,
+          hashedToken: hashedRefreshTokenForAddRole,
+          userId: userId, // userId is available in this scope
+          expiresAt: refreshTokenExpiryForAddRole,
         },
       });
 
       this.logger.log(
-        `Successfully added/activated role ${role} for user ${userId}. New tokens generated.`,
+        `Role ${addRoleDto.role} processed for user ${userId}. New tokens generated.`,
       );
-      return tokens; // Return tokens from the transaction
+      return newTokens;
     });
 
-    return result;
+    return tokens;
   }
+
+  // --- End Logout Method ---
 
   // --- Add Role Management Method ---
   /**
@@ -962,7 +985,8 @@ export class AuthService {
       });
 
       // Send OTP via email
-      return await this.resendService.sendOtpEmail(dto.email, otp);
+      const res = await this.resendService.sendOtpEmail(dto.email, otp);
+      return res;
     } catch (error) {
       this.logger.error(`Error requesting email OTP: ${error.message}`);
       return false;
@@ -1205,10 +1229,12 @@ export class AuthService {
         updatedAt: true,
         lastLogin: true,
         accountStatus: true,
-        userRoles: {
-          where: { isActive: true },
-          select: { role: true },
-        },
+        
+        userRoles: true,
+        // {
+        //   where: { isActive: true },
+        //   select: { role: true },
+        // },
       },
     });
 

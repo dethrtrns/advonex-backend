@@ -34,10 +34,10 @@ import { UploadModule } from './upload/upload.module';
     AuthModule, // Include Auth module features
     SmsModule, // Add SmsModule here (Global)
     ProfilesModule,
-    StaticDataModule, // Add ProfilesModule here
+    StaticDataModule,
     LawyersModule,
-    ClientModule,
-    LawyerModule,
+    // ClientModule,
+    // LawyerModule,
     UploadModule,
     // Add other feature modules here as they are created
   ],
