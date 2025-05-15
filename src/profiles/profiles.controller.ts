@@ -28,6 +28,9 @@ import {
 import { ClientProfile, LawyerProfile } from '@prisma/client';
 import { ClientProfileResponseDto } from './dto/client-profile-response.dto';
 import { LawyerProfileResponseDto } from './dto/lawyer-profile-response.dto';
+import { StandardResponseDto } from '../common/dto/standard-response.dto'; // Import the new DTO
+import { ApiStandardResponse } from 'src/common/decorators/api-standard-response.decorator';
+import { ApiStandardErrors } from 'src/common/decorators/api-error-responses';
 
 @ApiTags('Profiles')
 @Controller('profiles')
@@ -49,23 +52,11 @@ export class ProfilesController {
     `,
   })
   @ApiBearerAuth()
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Client profile retrieved successfully',
-    type: ClientProfileResponseDto,
-  })
-  @ApiResponse({
-    status: HttpStatus.UNAUTHORIZED,
-    description: 'Unauthorized.',
-  })
-  @ApiResponse({
-    status: HttpStatus.FORBIDDEN,
-    description: 'Forbidden resource.',
-  })
-  @ApiResponse({
-    status: HttpStatus.NOT_FOUND,
-    description: 'Client profile not found.',
-  })
+  @ApiStandardResponse(
+    ClientProfileResponseDto,
+    'Client profile retrieved successfully.',
+  )
+  @ApiStandardErrors()
   async getClientProfile(@Req() req: Request): Promise<ClientProfile> {
     const user = req.user as JwtPayload;
     if (!user?.sub) {
@@ -92,11 +83,10 @@ export class ProfilesController {
   })
   @ApiBearerAuth()
   @ApiBody({ type: UpdateClientProfileDto })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Client profile updated successfully',
-    type: ClientProfileResponseDto,
-  })
+  @ApiStandardResponse(
+    ClientProfileResponseDto,
+    'Client profile updated successfully',
+  )
   @ApiResponse({
     status: HttpStatus.UNAUTHORIZED,
     description: 'Unauthorized.',

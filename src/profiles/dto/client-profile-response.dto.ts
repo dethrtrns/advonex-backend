@@ -6,13 +6,13 @@ export class ClientProfileResponseDto implements ClientProfile {
   id: string;
 
   @ApiProperty({ description: "Client's full name", nullable: true })
-  name: string | null;
+  name: string;
 
   @ApiProperty({
     description: "URL of the client's profile picture",
     nullable: true,
   })
-  photo: string | null;
+  photo: string;
 
   @ApiProperty({ description: 'Whether registration is pending' })
   registrationPending: boolean;

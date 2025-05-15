@@ -6,6 +6,9 @@ import helmet from 'helmet'; // Import helmet
 import { ApiResponseDto } from './common/dto/api-response.dto'; // Import ApiResponseDto
 import { LawyerProfileDto } from './lawyers/dto/lawyer-profile.dto'; // Import LawyerProfileDto
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
+import { StandardResponseDto } from './common/dto/standard-response.dto';
+import { ClientProfileResponseDto } from './profiles/dto/client-profile-response.dto';
+import { LawyerProfileResponseDto } from './profiles/dto/lawyer-profile-response.dto';
 
 // Function-level comment: Bootstrap the NestJS application.
 async function bootstrap() {
@@ -51,8 +54,17 @@ async function bootstrap() {
     .build();
   // Pass extra models to ensure generic DTOs and their types are registered
   const document = SwaggerModule.createDocument(app, config, {
-    extraModels: [ApiResponseDto, LawyerProfileDto], // Added this line
+    extraModels: [],
   });
+  // If needed to include extramodels, For all DTOs:
+  // 
+  // import * as AllDtos from '../dto-all-export';
+
+  // SwaggerModule.createDocument(app, config, {
+  //   extraModels: Object.values(AllDtos),
+  // });
+
+
   SwaggerModule.setup('api', app, document); // Serve Swagger UI at /api
 
   const port = process.env.PORT || 3003;

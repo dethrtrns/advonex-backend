@@ -1221,32 +1221,32 @@ export class AuthService {
   async getUserById(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: {
-        id: true,
-        email: true,
-        phoneNumber: true,
-        createdAt: true,
-        updatedAt: true,
-        lastLogin: true,
-        accountStatus: true,
-        
+      include: {
+        clientProfile: true,
+        lawyerProfile: true,
+        refreshTokens: false,
         userRoles: true,
-        // {
-        //   where: { isActive: true },
-        //   select: { role: true },
-        // },
-      },
+      }, // Now includes all direct relations
+      // select: {
+      //   id: true,
+      //   email: true,
+      //   phoneNumber: true,
+      //   createdAt: true,
+      //   updatedAt: true,
+      //   lastLogin: true,
+      //   accountStatus: true,
+
+      //   userRoles: true,
+      //   // {
+      //   //   where: { isActive: true },
+      //   //   select: { role: true },
+      //   // },
+      // },
     });
 
     if (!user) {
       throw new NotFoundException('User not found');
     }
-
-    // Transform the response to match the expected format
-    const { userRoles, ...userData } = user;
-    return {
-      ...userData,
-      roles: userRoles.map((ur) => ur.role),
-    };
+    return user;
   }
 } // End of AuthService class

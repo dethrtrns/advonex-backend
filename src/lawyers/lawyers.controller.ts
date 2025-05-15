@@ -8,6 +8,7 @@ import {
   ParseUUIDPipe,
   Param,
   NotFoundException,
+  Response,
 } from '@nestjs/common';
 import { LawyersService } from './lawyers.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -26,6 +27,8 @@ import {
   LawyerProfileDto,
   PaginatedLawyerProfilesResponseDto,
 } from './dto/lawyer-profile.dto';
+import { ApiResponseDto } from 'src/common/dto/api-response.dto';
+import { ApiStandardResponse } from 'src/common/decorators/api-standard-response.decorator';
 
 @ApiTags('Lawyers')
 @Controller('lawyers')
@@ -61,11 +64,10 @@ export class LawyersController {
       - Returns 404 if lawyer not found
     `,
   })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Lawyer retrieved successfully',
-    type: LawyerProfileDto,
-  })
+  @ApiStandardResponse(
+    LawyerProfileDto,
+    'Lawyer profile retrieved successfully',
+  )
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
     description: 'Lawyer not found.',
