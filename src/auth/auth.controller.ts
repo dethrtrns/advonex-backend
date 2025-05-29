@@ -44,6 +44,30 @@ import {
   UnifiedOtpRequestDto,
   UnifiedOtpVerifyDto,
 } from './dto/email-otp.dto';
+// TODO:
+// 1. in testing i see when i update the specialization of a lawyer via this Put request(jest sending this: {"specialization": "Technology Law"} ), then it sets the specialization successfully but nullifies the primaryCourt field, and vice versa. First find out and explain why this is happening then propose a fix and apply only after i confirm. DO NOT TRY To FIX Without finding the origin of the issue.
+// 2. For practiceAreas, practiceCourts, and services (many-to-many relations), i want a similar behaviour: the frontend(or api user) if(optionally) sends the body with the field name and values as an array of object/s(each object representing data-a row of the respective table) with field and value pairs as as per the schema, and we check each value of the array for existing data in respective table and link them accordingly and for values not found in existing-we create the data and then link it properly with the profile. For example- frontend sends this request body-{"practiceAreas": [{"name":"Civil Law"}, {"name":"Family Law"}]}, so we first check if these(all values) already exist(related to) on the profile and send appropriate response, else we check if the requested practiceAreas exist in PracticeArea table, let's say we find that "Civil Law" exists but "Family Law" doesn't, so we first create the data for not existing value e.i. "Family Law", then we link the lawyer's profile to these(all requested practiceAreas in the Array) requested relations.
+// For:
+// A) practiceAreas: the whole field is optional but if it is sent then it must be an Array of either valid objects or empty array(an empty array should reset/remove any existing practiceAreas relation of the lawyer and set it to null). A valid object here means it must/can have:
+//  1. the field- "name" : "any practice area string value"
+//  2. optinal field-"id" is allowed but won't be used mandatorily, we can use this value if available to set the relations directly and skip creation process).
+
+// Update process: If 'id' field is provided(for each object of the array) then we just update the profile with requested practiceArea(if provided id is valid else throw error and send response of invalid practiceArea id), else if no 'id' field then we check each name field's value of the object/s sent in the array to match existing data in table, else create the data not found in table. Then we update the profile with required relation/s.
+
+// B) practiceCourts: the whole field is optional but if it is sent then it must be an Array of either valid objects or empty array(an empty array should reset/remove any existing practiceCourts relation of the lawyer and set it to null). A valid object here means it must/can have:
+//  1. the field- "name" : "any practice Court string value".
+//  2. optinal field-"id" is allowed but won't be used mandatorily, we can use this value if available to set the relations directly and skip creation process).
+//  3. optional field-"location" is allowed and if sent then location is updated(of the respective existing practiceCourt data or the newly created data)
+
+// Update process: If 'id' field is provided(for each object of the array) then we just update the profile with requested practiceCourt(if provided id is valid else throw error and send response of invalid court id), else if no 'id' field then we check each name field's value of the object/s sent in the array to match existing data in table, else create the data not found in table. Then we update the profile with required relation/s. For location field(if provided) we update the location of the respective(if updating the profile with existing court data via provided 'id' or found by name then we update the respective value of the PracticeCourt table with the provided location field else if creating a new one we should set the location field of the created PracticeCourt row to the location provided) PracticeCourt data in the PracticeCourt Table. In case of creating new PracticeCourt where location field/value is not provided(or is falsy) we should default the location field of the created PracticeCourt row to the location value of the lawyer's profile(it makes sense as the location field in the lawyer profile represents the city where s/he practices Law, so the PracticeCourt s/he's is selecting should logically be in same city).
+
+// C) Services: the whole field is optional but if it is sent then it must be an Array of either valid objects or empty array(an empty array should reset/remove any existing services relation of the lawyer and set it to null). A valid object here means it must/can have:
+//  1. the field- "name" : "any service string value".
+//  2. optinal field-"id" is allowed but won't be used mandatorily, we can use this value if available to set the relations directly and skip creation process).
+//  3. optional field-"description" is allowed and if sent then description is updated(of the respective existing service data or the newly created data)
+//  4. optional field-"isPredefined", if valid boolean value provided then we set it to the provided value else default is false.
+
+// Update process: If 'id' field is provided(for each object of the array) then we just update the profile with requested service(if provided id is valid else throw error and send response of invalid service id), else if no 'id' field then we check each name field's value of the object/s sent in the array to match existing data in table, else create the data not found in table. Then we update the profile with required relation/s. For description field(if provided) we update the description of the respective(if updating the profile with existing Service data via provided 'id' or found by name then we update the respective value of the Service table with the provided description field else if creating a new one we should set the description field of the created Service row to the description provided) Service data in the Service Table.
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -416,7 +440,7 @@ export class AuthController {
   //   description: `
   //     Updates the roles assigned to a specific user.
   //     Only administrators can access this endpoint.
-      
+
   //     **Testing Tips:**
   //     - Include admin access token in Authorization header
   //     - Provide valid user ID and roles

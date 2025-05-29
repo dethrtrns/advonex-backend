@@ -15,8 +15,12 @@ export class CloudinaryService {
           folder,
           resource_type: 'auto',
         },
-        (error: UploadApiErrorResponse | undefined, result: UploadApiResponse | undefined) => {
-          if (error || !result) return reject(error || new Error('Upload failed'));
+        (
+          error: UploadApiErrorResponse | undefined,
+          result: UploadApiResponse | undefined,
+        ) => {
+          if (error || !result)
+            return reject(error || new Error('Upload failed'));
           resolve({
             url: result.secure_url,
             publicId: result.public_id,
@@ -25,6 +29,7 @@ export class CloudinaryService {
       );
 
       // Convert buffer to stream and pipe to cloudinary
+      // console.log('file', file);
       const stream = Readable.from(file.buffer);
       stream.pipe(uploadStream);
     });
@@ -33,7 +38,7 @@ export class CloudinaryService {
   async deleteImage(publicId: string): Promise<void> {
     await cloudinary.uploader.destroy(publicId);
   }
-  
+
   /**
    * Uploads an image to the common uploads folder
    * @param file - Image file to upload

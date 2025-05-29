@@ -3,6 +3,7 @@ import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { Role } from '@prisma/client';
 import { JwtPayload } from '../auth/strategies/jwt.strategy';
+import { trace } from 'console';
 
 @Injectable()
 export class UploadService {
@@ -72,38 +73,44 @@ export class UploadService {
    * @returns URL and public ID of the uploaded image
    */
   async uploadLawyerProfilePic(file: Express.Multer.File, user: JwtPayload) {
-    this.logger.log(`Uploading lawyer profile picture for user ${user.sub}`);
+    try {
+      this.logger.log(`Uploading lawyer profile picture for user ${user.sub}`);
 
-    // Verify user exists and is a lawyer
-    const userData = await this.prisma.user.findUnique({
-      where: { id: user.sub },
-      include: {
-        lawyerProfile: true,
-        userRoles: {
-          where: {
-            isActive: true,
-            role: Role.LAWYER,
+      // Verify user exists and is a lawyer
+      const userData = await this.prisma.user.findUnique({
+        where: { id: user.sub },
+        include: {
+          lawyerProfile: true,
+          userRoles: {
+            where: {
+              isActive: true,
+              role: Role.LAWYER,
+            },
           },
         },
-      },
-    });
+      });
 
-    if (!userData || userData.userRoles.length === 0) {
-      throw new Error('User not found or is not a lawyer');
+      if (!userData || userData.userRoles.length === 0) {
+        throw new Error('User not found or is not a lawyer');
+      }
+
+      // Upload to lawyer profile pictures folder
+      const uploadResult = await this.cloudinaryService.uploadImage(
+        file,
+        'advonex/lawyer-profiles',
+      );
+
+      // Update lawyer profile with new picture URL
+      await this.prisma.lawyerProfile.update({
+        where: { userId: user.sub },
+        data: { photo: uploadResult.url },
+      });
+
+      return uploadResult;
+    } catch (error) {
+      // console.error('upload service----------->>>>>>>>>>>', error);
+      this.logger.error(`Error uploading lawyer profile picture: ${error}`);
+      throw error;
     }
-
-    // Upload to lawyer profile pictures folder
-    const uploadResult = await this.cloudinaryService.uploadImage(
-      file,
-      'advonex/lawyer-profiles',
-    );
-
-    // Update lawyer profile with new picture URL
-    await this.prisma.lawyerProfile.update({
-      where: { userId: user.sub },
-      data: { photo: uploadResult.url },
-    });
-
-    return uploadResult;
   }
 }

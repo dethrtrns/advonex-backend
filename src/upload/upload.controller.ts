@@ -32,7 +32,7 @@ import { Request } from 'express';
 @Controller('upload')
 export class UploadController {
   constructor(private readonly uploadService: UploadService) {}
-
+  
   @Post('image')
   @ApiOperation({
     summary: 'Upload a general image',
@@ -149,6 +149,7 @@ export class UploadController {
   ) {
     try {
       const user = req.user as JwtPayload;
+      // console.info('recieved', req.body, '>>>>>>>>>>> file recieved', file);
       const uploadResult = await this.uploadService.uploadLawyerProfilePic(
         file,
         user,
@@ -168,7 +169,10 @@ export class UploadController {
       ) {
         throw new BadRequestException(error.message);
       }
-      throw new InternalServerErrorException('Error uploading profile picture');
+      throw new InternalServerErrorException(
+        'Error uploading profile picture:-->',
+        error,
+      );
     }
   }
 }
