@@ -523,6 +523,7 @@ export class AuthService {
         incomingRefreshToken,
         storedTokenRecord.hashedToken,
       );
+      console.log('isMatch', isMatch);
 
       if (!isMatch) {
         this.logger.warn(
@@ -576,6 +577,10 @@ export class AuthService {
         email: user.email || undefined,
         roles: user.userRoles.map((ur) => ur.role),
         profileId: user.clientProfile?.id || user.lawyerProfile?.id || '',
+        profileIds: {
+          clientId: user.clientProfile?.id,
+          lawyerId: user.lawyerProfile?.id,
+        },
       };
       const newTokens = await this.generateTokens(newAccessTokenPayload);
 
@@ -583,6 +588,32 @@ export class AuthService {
       const newHashedRefreshToken = await this.hashRefreshToken(
         newTokens.refreshToken,
       );
+
+      console.log(
+        'incomingT',
+        incomingRefreshToken,
+        'newT',
+        newTokens.refreshToken,
+      );
+      //test bcrypt match
+      const testMatch = await bcrypt.compare(
+        incomingRefreshToken,
+        newHashedRefreshToken,
+      );
+      console.log('test bcrypt Match', testMatch);
+      // test end
+
+      // Test2 indepandant bcrypt test
+      const token1 =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3MTE0YWMzYy1iZTY5LTQ1NzUtOGY0Ni00ZmEzMzIxOTdjODAiLCJpYXQiOjE3NDg3Njc4NzYsImV4cCI6MTc1MTM1OTg3Nn0.S81FlZC59_4uTuhdLcSFLKD8pUGGiLySKiSDnYDOhqY'; // simulate incoming
+      const token2 =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3MTE0YWMzYy1iZTY5LTQ1NzUtOGY0Ni00ZmEzMzIxOTdjODAiLCJpYXQiOjE3NDg3NzI3ODgsImV4cCI6MTc1MTM2NDc4OH0.ajeeIHE72siwAHTrp_NriEgbujj9DQp_4pWqgBsSBS0'; // simulate new
+      const hash2 = await bcrypt.hash(token2, 10);
+      const match = await bcrypt.compare(token1, hash2);
+      // console.log('token1 === token2?', token1 === token2); // false
+      console.log('match:', match); // should be false
+      //
+
       const newRefreshTokenExpiry = this.calculateRefreshTokenExpiry();
 
       // 8. Atomically delete the old token and create the new one
@@ -1119,6 +1150,10 @@ export class AuthService {
 
       // Create JWT payload
       const activeRoles = finalUser.userRoles.map((ur) => ur.role);
+      const profileIds = {
+        clientId: finalUser.clientProfile?.id,
+        lawyerId: finalUser.lawyerProfile?.id,
+      };
       const profileId =
         finalUser.clientProfile?.id || finalUser.lawyerProfile?.id || '';
 
@@ -1127,6 +1162,7 @@ export class AuthService {
         email: finalUser.email || undefined,
         roles: activeRoles,
         profileId,
+        profileIds,
       };
 
       // Generate tokens

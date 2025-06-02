@@ -12,6 +12,10 @@ export interface JwtPayload {
   email?: string; // Optional for phone-based users
   roles: Role[]; // Array of roles
   profileId: string; // ID of the active profile (Client or Lawyer)
+  profileIds?: {
+    clientId?: string;
+    lawyerId?: string;
+  }; // ID of the active profile (Client or Lawyer)
   // status?: AccountStatus; // Optional: Include if needed for checks
 }
 
