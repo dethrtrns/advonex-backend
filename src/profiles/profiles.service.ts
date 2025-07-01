@@ -191,22 +191,50 @@ export class ProfilesService {
     }
 
     try {
-      // Handle specialization
-      let specializationId: string | null = null;
+      const updateData: Prisma.LawyerProfileUpdateInput = {
+        name: updateLawyerProfileDto.name,
+        photo: updateLawyerProfileDto.photo,
+        location: updateLawyerProfileDto.location,
+        experience: updateLawyerProfileDto.experience,
+        bio: updateLawyerProfileDto.bio,
+        consultFee: updateLawyerProfileDto.consultFee,
+        barId: updateLawyerProfileDto.barId,
+        isVerified: updateLawyerProfileDto.isVerified,
+        registrationPending: false,
+        education: updateLawyerProfileDto.education
+          ? {
+              upsert: {
+                create: {
+                  degree: updateLawyerProfileDto.education.degree,
+                  institution: updateLawyerProfileDto.education.institution,
+                  year: updateLawyerProfileDto.education.year,
+                },
+                update: {
+                  degree: updateLawyerProfileDto.education.degree,
+                  institution: updateLawyerProfileDto.education.institution,
+                  year: updateLawyerProfileDto.education.year,
+                },
+              },
+            }
+          : undefined,
+      };
+
       if (updateLawyerProfileDto.specialization) {
         const specialization = await this.findOrCreatePracticeArea(
           updateLawyerProfileDto.specialization,
         );
-        specializationId = specialization.id;
+        updateData.specialization = {
+          connect: { id: specialization.id },
+        };
       }
 
-      // Handle primary court
-      let primaryCourtId: string | null = null;
       if (updateLawyerProfileDto.primaryCourt) {
         const primaryCourt = await this.findOrCreatePracticeCourt(
           updateLawyerProfileDto.primaryCourt,
         );
-        primaryCourtId = primaryCourt.id;
+        updateData.primaryCourt = {
+          connect: { id: primaryCourt.id },
+        };
       }
 
       // Update the profile
@@ -214,37 +242,7 @@ export class ProfilesService {
         where: {
           userId: user.sub,
         },
-        data: {
-          name: updateLawyerProfileDto.name,
-          photo: updateLawyerProfileDto.photo,
-          location: updateLawyerProfileDto.location,
-          experience: updateLawyerProfileDto.experience,
-          bio: updateLawyerProfileDto.bio,
-          consultFee: updateLawyerProfileDto.consultFee,
-          barId: updateLawyerProfileDto.barId,
-          isVerified: updateLawyerProfileDto.isVerified,
-          registrationPending: false, // Mark registration as complete
-          specializationId: specializationId,
-          primaryCourtId: primaryCourtId,
-          education: updateLawyerProfileDto.education
-            ? {
-                upsert: {
-                  create: {
-                    degree: updateLawyerProfileDto.education.degree,
-                    institution: updateLawyerProfileDto.education.institution,
-                    year: updateLawyerProfileDto.education.year,
-                  },
-                  update: {
-                    degree: updateLawyerProfileDto.education.degree,
-                    institution: updateLawyerProfileDto.education.institution,
-                    year: updateLawyerProfileDto.education.year,
-                  },
-                },
-              }
-            : undefined,
-          // Note: Handling for practiceAreas, practiceCourts, services (many-to-many) needs careful consideration
-          // This example focuses on direct fields and simple relations. Complex relations might require transactions or more detailed logic.
-        },
+        data: updateData,
         include: {
           practiceAreas: { include: { practiceArea: true } },
           practiceCourts: { include: { practiceCourt: true } },

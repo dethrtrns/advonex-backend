@@ -600,10 +600,10 @@ export class AuthService {
         incomingRefreshToken,
         newHashedRefreshToken,
       );
-      console.log('test bcrypt Match', testMatch);
+      console.log('test bcrypt Match', testMatch); // should be false but returns true
       // test end
 
-      // Test2 indepandant bcrypt test
+      // Test2 independant bcrypt test
       const token1 =
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3MTE0YWMzYy1iZTY5LTQ1NzUtOGY0Ni00ZmEzMzIxOTdjODAiLCJpYXQiOjE3NDg3Njc4NzYsImV4cCI6MTc1MTM1OTg3Nn0.S81FlZC59_4uTuhdLcSFLKD8pUGGiLySKiSDnYDOhqY'; // simulate incoming
       const token2 =
@@ -611,8 +611,8 @@ export class AuthService {
       const hash2 = await bcrypt.hash(token2, 10);
       const match = await bcrypt.compare(token1, hash2);
       // console.log('token1 === token2?', token1 === token2); // false
-      console.log('match:', match); // should be false
-      //
+      console.log('match:', match); // should be false but returns true
+      // test end
 
       const newRefreshTokenExpiry = this.calculateRefreshTokenExpiry();
 
@@ -1098,6 +1098,8 @@ export class AuthService {
           });
 
           // Create appropriate profile based on role
+          // ####################    NOTE   ############################
+          // This code seems to be redundant as the PROFILE is already created in the previous step.??
           if (role === Role.CLIENT) {
             await tx.clientProfile.create({
               data: {
@@ -1115,16 +1117,50 @@ export class AuthService {
           }
         } else {
           this.logger.log(`Existing user login for email: ${dto.email}`);
-          // If role is provided, check if user has it
+          // If role is provided, check if user has it, if not add it and switch to active or if role is present but not active then switch it to active.
           if (dto.role) {
-            const hasRequestedRole = user.userRoles.some(
-              (ur) => ur.role === dto.role && ur.isActive,
+            const existingRole = user.userRoles.find(
+              (ur) => ur.role === dto.role,
             );
-            if (!hasRequestedRole) {
-              throw new UnauthorizedException(
-                'User does not have the requested role',
+            if (!existingRole) {
+              // Create new role and set it to active
+              this.logger.log(
+                `Adding new role ${dto.role} for user ${user.id}`,
               );
+              await tx.userRole.create({
+                data: {
+                  userId: user.id,
+                  role: dto.role,
+                  isActive: true,
+                },
+              });
+              // link appropriate profile based on role
+              if (dto.role === Role.CLIENT) {
+                await tx.clientProfile.create({
+                  data: {
+                    userId: user.id,
+                    registrationPending: true,
+                  },
+                });
+              } else if (dto.role === Role.LAWYER) {
+                await tx.lawyerProfile.create({
+                  data: {
+                    userId: user.id,
+                    registrationPending: true,
+                  },
+                });
+              }
+            } else if (!existingRole.isActive) {
+              await tx.userRole.update({
+                where: { id: existingRole.id },
+                data: { isActive: true },
+              });
             }
+            // switch other roles to inactive
+            await tx.userRole.updateMany({
+              where: { userId: user.id, role: { not: dto.role } },
+              data: { isActive: false },
+            });
           }
           // Update last login time for existing user
           await tx.user.update({
@@ -1203,7 +1239,8 @@ export class AuthService {
         error.stack,
       );
       throw new InternalServerErrorException(
-        'An error occurred during the verification process.',
+        'An error occurred during the verification process:',
+        error.message,
       );
     }
   }
