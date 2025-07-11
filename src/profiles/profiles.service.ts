@@ -11,6 +11,8 @@ import { ClientProfile, LawyerProfile, Role, Prisma } from '@prisma/client';
 import { JwtPayload } from '../auth/strategies/jwt.strategy';
 import { UpdateClientProfileDto } from './dto/update-client-profile.dto';
 import { UpdateLawyerProfileDto } from './dto/update-lawyer-profile.dto';
+import { equals } from 'class-validator';
+import { practiceCourts } from 'src/data/seedData';
 
 @Injectable()
 export class ProfilesService {
@@ -243,6 +245,33 @@ export class ProfilesService {
               }
             : undefined,
           // Note: Handling for practiceAreas, practiceCourts, services (many-to-many) needs careful consideration
+          // Handle name case senstivity in frontend(to lowercase)
+
+          practiceCourts: updateLawyerProfileDto.practiceCourts
+            ? {
+              
+              create: updateLawyerProfileDto.practiceCourts.map((court)  => ({
+                practiceCourt: {
+                  connectOrCreate: {
+                    where: { name: court.name},
+                    create: { name: court.name, location: court.location? court.location : undefined   },
+                  },
+                },
+              }))
+            }: undefined,
+          
+            practiceAreas: updateLawyerProfileDto.practiceAreas
+            ? {
+              
+              create: updateLawyerProfileDto.practiceAreas.map((area)  => ({
+                practiceArea: {
+                  connectOrCreate: {
+                    where: { name: area.name},
+                    create: { name: area.name, description: area.description? area.description : undefined },
+                  },
+                },
+              }))
+            }: undefined,  
           // This example focuses on direct fields and simple relations. Complex relations might require transactions or more detailed logic.
         },
         include: {
@@ -315,3 +344,5 @@ export class ProfilesService {
     });
   }
 }
+
+
