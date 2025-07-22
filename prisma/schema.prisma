@@ -13,20 +13,20 @@ datasource db {
 
 // Minimal User model for authentication and core identification
 model User {
-  id                  String   @id @default(uuid())
-  phoneNumber         String?  @unique // Optional for email-based users
-  email               String?  @unique // Optional for phone-based users
-  accountStatus       AccountStatus @default(ACTIVE) // To manage user account state
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
-  lastLogin           DateTime? // Optional field to track last login time
+  id            String        @id @default(uuid())
+  phoneNumber   String?       @unique // Optional for email-based users
+  email         String?       @unique // Optional for phone-based users
+  accountStatus AccountStatus @default(ACTIVE) // To manage user account state
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  lastLogin     DateTime? // Optional field to track last login time
 
-// A User may optionally have both a ClientProfile and a LawyerProfile
+  // A User may optionally have both a ClientProfile and a LawyerProfile
   clientProfile ClientProfile?
   lawyerProfile LawyerProfile?
 
   refreshTokens RefreshToken[] // A user can have multiple active refresh tokens (e.g., from different devices)
-  
+
   // New relation for UserRole
   userRoles UserRole[]
 }
@@ -50,12 +50,12 @@ model UserRole {
 
 // New model for Client-specific details
 model ClientProfile {
-  id        String   @id @default(uuid())
-  name      String? // Optional details
-  photo     String?
+  id                  String   @id @default(uuid())
+  name                String? // Optional details
+  photo               String?
   registrationPending Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String @unique // One-to-one link back to User
@@ -67,18 +67,21 @@ model ClientProfile {
 
 // Holds Lawyer-specific details
 model LawyerProfile {
-  id         String   @id @default(uuid())
-  name       String?  // Optional name field
-  photo      String?
-  location   String?
-  experience Int?
-  bio        String?
-  consultFee Int?
-  barId      String?
-  isVerified Boolean  @default(false)
+  id    String  @id @default(uuid())
+  name  String? // Optional name field
+  photo String?
+
+  locationId String?
+  location   Location? @relation(fields: [locationId], references: [id], onDelete: Restrict)
+
+  experience          Int?
+  bio                 String?
+  consultFee          Int?
+  barId               String?
+  isVerified          Boolean  @default(false)
   registrationPending Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String @unique // One-to-one link back to User
@@ -110,6 +113,12 @@ model LawyerProfile {
 
   // Received Requests (One-to-Many)
   receivedRequests ConsultationRequest[] @relation("LawyerRequests")
+
+   // For query performance optimisation
+  @@index([name])
+  @@index([id])
+  @@index([consultFee])
+
 }
 
 // --- Lawyer Detail & Predefined List Models ---
@@ -139,6 +148,9 @@ model PracticeArea {
 
   // Relation back to lawyers practicing in this area (Many-to-Many)
   practicingLawyers LawyerPracticeArea[]
+
+   // For query performance optimisation
+  @@index([name])
 }
 
 // Join table for LawyerProfile <-> PracticeArea (Many-to-Many)
@@ -155,19 +167,28 @@ model LawyerPracticeArea {
   @@index([practiceAreaId])
 }
 
-// Model for predefined Practice Courts
+// Model for predefined Practice Courts(types of courts)
 model PracticeCourt {
-  id        String   @id @default(uuid())
-  name      String   @unique
-  location  String?
+  id   String @id @default(uuid())
+  name String @unique
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  locationId String?
+  location   Location? @relation(fields: [locationId], references: [id], onDelete: Restrict)
 
   // Relation back to lawyers having this as primary court
   primaryForLawyers LawyerProfile[] @relation("LawyerPrimaryCourt")
 
   // Relation back to lawyers practicing in this court (Many-to-Many)
   practicingLawyers LawyerPracticeCourt[]
+
+  // For query performance optimisation
+  @@index([name])
+  @@index([name, locationId])
+  
+  
 }
 
 // Join table for LawyerProfile <-> PracticeCourt (Many-to-Many)
@@ -182,6 +203,102 @@ model LawyerPracticeCourt {
 
   @@id([lawyerProfileId, practiceCourtId])
   @@index([practiceCourtId])
+}
+
+// Model for location
+
+model Country {
+  id   String @id @default(uuid())
+  name String @unique
+  code String @unique // ISO country code like "IN"
+  
+  states State[]
+  
+  @@map("countries")
+}
+
+model State {
+  id   String @id @default(uuid())
+  name String
+  code String? // State code like "MH", "DL"
+  
+  countryId String
+  country   Country @relation(fields: [countryId], references: [id], onDelete: Restrict)
+  
+  cities City[]
+  
+  @@unique([name, countryId])
+  @@map("states")
+}
+
+model City {
+  id   String @id @default(uuid())
+  name String
+  
+  stateId String
+  state   State @relation(fields: [stateId], references: [id])
+  
+  // areas Area[]
+  locations Location[] // Direct locations in city (without specific area)
+  
+  @@unique([name, stateId])
+  @@index([name])
+  @@map("cities")
+}
+
+// model Area {
+//   id      String @id @default(uuid())
+//   name    String  // Area/locality name
+//   pincode String   
+  
+//   cityId String
+//   city   City @relation(fields: [cityId], references: [id], onDelete:Cascade)
+  
+//   locations Location[]
+  
+//   @@unique([pincode]) // Same pincode can exist in different cities
+//   @@map("areas")
+// }
+
+model Location {
+  id String @id @default(uuid())
+
+  isDeleted Boolean @default(false)
+  deletedAt DateTime
+  
+  // Address components
+  address   String?
+  landmark  String?
+  
+  // Coordinates
+  latitude  Float? @db.DoublePrecision
+  longitude Float? @db.DoublePrecision
+  
+  // Hierarchical location reference
+  cityId String
+  city   City @relation(fields: [cityId], references: [id], onDelete: Restrict)
+  
+  // To-be clarified
+  // areaId String?
+  // area   Area? @relation(fields: [areaId], references: [id], onDelete: Restrict)
+  
+  // Ensure either city or area is specified
+  // You'll need to handle this validation in your application logic
+  
+  // Related entities
+  lawyerProfiles LawyerProfile[]
+  practiceCourts PracticeCourt[]
+
+// Location for 
+  locationOf LocationType @default(UNASSIGNED)
+  
+  @@map("locations")
+}
+
+enum LocationType {
+  PRACTICE_COURT 
+  LAWYER
+  UNASSIGNED
 }
 
 // Model for Services offered by Lawyers
@@ -252,10 +369,10 @@ model ConsultationRequest {
 // Model for storing OTPs during phone verification/login
 model PhoneOtp {
   id          String   @id @default(uuid())
-  phoneNumber String   // phoneNumber is not unique, handle uniqueness in application logic
-  otp         String   
+  phoneNumber String // phoneNumber is not unique, handle uniqueness in application logic
+  otp         String
   expiresAt   DateTime
-  role        Role     // Store intended role with OTP
+  role        Role // Store intended role with OTP
   createdAt   DateTime @default(now())
   // Add updatedAt for consistency, Prisma handles it automatically
   updatedAt   DateTime @updatedAt
@@ -265,12 +382,12 @@ model PhoneOtp {
 
 // Model for storing Refresh Tokens
 model RefreshToken {
-  id        String   @id @default(uuid())
-  hashedToken String   // Store a hashed version of the token
-  userId    String   // Link to the User
-  expiresAt DateTime // Expiry date of this refresh token
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(uuid())
+  hashedToken String // Store a hashed version of the token
+  userId      String // Link to the User
+  expiresAt   DateTime // Expiry date of this refresh token
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade) // Relation to User
 
