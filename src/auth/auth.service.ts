@@ -1075,7 +1075,7 @@ export class AuthService {
           this.logger.log(`New user registration for email: ${dto.email}`);
 
           // Create new user
-          user = await tx.user.create({
+           user = await tx.user.create({
             data: {
               email: dto.email,
               accountStatus: AccountStatus.ACTIVE,
@@ -1087,7 +1087,8 @@ export class AuthService {
             },
           });
 
-          // Create role based on request or default to CLIENT
+          // Create role(& profile) based on request or default to CLIENT for new users(existing user false)
+
           const role = dto.role || Role.CLIENT;
           await tx.userRole.create({
             data: {
@@ -1097,9 +1098,9 @@ export class AuthService {
             },
           });
 
-          // Create appropriate profile based on role
-          // ####################    NOTE   ############################
-          // This code seems to be redundant as the PROFILE is already created in the previous step.??
+          // Create appropriate (new)profile based on role for NEW user
+
+          //
           if (role === Role.CLIENT) {
             await tx.clientProfile.create({
               data: {
@@ -1118,10 +1119,12 @@ export class AuthService {
         } else {
           this.logger.log(`Existing user login for email: ${dto.email}`);
           // If role is provided, check if user has it, if not add it and switch to active or if role is present but not active then switch it to active.
+          // Add new role & create respective profile for EXISTING user
           if (dto.role) {
             const existingRole = user.userRoles.find(
               (ur) => ur.role === dto.role,
             );
+          
             if (!existingRole) {
               // Create new role and set it to active
               this.logger.log(
@@ -1134,7 +1137,10 @@ export class AuthService {
                   isActive: true,
                 },
               });
+
               // link appropriate profile based on role
+              // ####################    NOTE   ############################
+
               if (dto.role === Role.CLIENT) {
                 await tx.clientProfile.create({
                   data: {

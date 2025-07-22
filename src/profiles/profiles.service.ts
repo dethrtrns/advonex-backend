@@ -199,6 +199,7 @@ export class ProfilesService {
         bio: updateLawyerProfileDto.bio,
         consultFee: updateLawyerProfileDto.consultFee,
         barId: updateLawyerProfileDto.barId,
+        // default value for isVerified?
         isVerified: updateLawyerProfileDto.isVerified,
         registrationPending: false,
         education: updateLawyerProfileDto.education
@@ -218,7 +219,7 @@ export class ProfilesService {
             }
           : undefined,
       };
-
+      // Finding prsctice area & courts based on names
       if (updateLawyerProfileDto.specialization) {
         const specialization = await this.findOrCreatePracticeArea(
           updateLawyerProfileDto.specialization,
