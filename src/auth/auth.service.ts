@@ -523,6 +523,7 @@ export class AuthService {
         incomingRefreshToken,
         storedTokenRecord.hashedToken,
       );
+      console.log('isMatch', isMatch);
 
       if (!isMatch) {
         this.logger.warn(
@@ -576,6 +577,10 @@ export class AuthService {
         email: user.email || undefined,
         roles: user.userRoles.map((ur) => ur.role),
         profileId: user.clientProfile?.id || user.lawyerProfile?.id || '',
+        profileIds: {
+          clientId: user.clientProfile?.id,
+          lawyerId: user.lawyerProfile?.id,
+        },
       };
       const newTokens = await this.generateTokens(newAccessTokenPayload);
 
@@ -583,6 +588,32 @@ export class AuthService {
       const newHashedRefreshToken = await this.hashRefreshToken(
         newTokens.refreshToken,
       );
+
+      console.log(
+        'incomingT',
+        incomingRefreshToken,
+        'newT',
+        newTokens.refreshToken,
+      );
+      //test bcrypt match
+      const testMatch = await bcrypt.compare(
+        incomingRefreshToken,
+        newHashedRefreshToken,
+      );
+      console.log('test bcrypt Match', testMatch); // should be false but returns true
+      // test end
+
+      // Test2 independant bcrypt test
+      const token1 =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3MTE0YWMzYy1iZTY5LTQ1NzUtOGY0Ni00ZmEzMzIxOTdjODAiLCJpYXQiOjE3NDg3Njc4NzYsImV4cCI6MTc1MTM1OTg3Nn0.S81FlZC59_4uTuhdLcSFLKD8pUGGiLySKiSDnYDOhqY'; // simulate incoming
+      const token2 =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3MTE0YWMzYy1iZTY5LTQ1NzUtOGY0Ni00ZmEzMzIxOTdjODAiLCJpYXQiOjE3NDg3NzI3ODgsImV4cCI6MTc1MTM2NDc4OH0.ajeeIHE72siwAHTrp_NriEgbujj9DQp_4pWqgBsSBS0'; // simulate new
+      const hash2 = await bcrypt.hash(token2, 10);
+      const match = await bcrypt.compare(token1, hash2);
+      // console.log('token1 === token2?', token1 === token2); // false
+      console.log('match:', match); // should be false but returns true
+      // test end
+
       const newRefreshTokenExpiry = this.calculateRefreshTokenExpiry();
 
       // 8. Atomically delete the old token and create the new one
@@ -1044,7 +1075,7 @@ export class AuthService {
           this.logger.log(`New user registration for email: ${dto.email}`);
 
           // Create new user
-          user = await tx.user.create({
+           user = await tx.user.create({
             data: {
               email: dto.email,
               accountStatus: AccountStatus.ACTIVE,
@@ -1056,7 +1087,8 @@ export class AuthService {
             },
           });
 
-          // Create role based on request or default to CLIENT
+          // Create role(& profile) based on request or default to CLIENT for new users(existing user false)
+
           const role = dto.role || Role.CLIENT;
           await tx.userRole.create({
             data: {
@@ -1066,7 +1098,9 @@ export class AuthService {
             },
           });
 
-          // Create appropriate profile based on role
+          // Create appropriate (new)profile based on role for NEW user
+
+          //
           if (role === Role.CLIENT) {
             await tx.clientProfile.create({
               data: {
@@ -1084,16 +1118,55 @@ export class AuthService {
           }
         } else {
           this.logger.log(`Existing user login for email: ${dto.email}`);
-          // If role is provided, check if user has it
+          // If role is provided, check if user has it, if not add it and switch to active or if role is present but not active then switch it to active.
+          // Add new role & create respective profile for EXISTING user
           if (dto.role) {
-            const hasRequestedRole = user.userRoles.some(
-              (ur) => ur.role === dto.role && ur.isActive,
+            const existingRole = user.userRoles.find(
+              (ur) => ur.role === dto.role,
             );
-            if (!hasRequestedRole) {
-              throw new UnauthorizedException(
-                'User does not have the requested role',
+          
+            if (!existingRole) {
+              // Create new role and set it to active
+              this.logger.log(
+                `Adding new role ${dto.role} for user ${user.id}`,
               );
+              await tx.userRole.create({
+                data: {
+                  userId: user.id,
+                  role: dto.role,
+                  isActive: true,
+                },
+              });
+
+              // link appropriate profile based on role
+              // ####################    NOTE   ############################
+
+              if (dto.role === Role.CLIENT) {
+                await tx.clientProfile.create({
+                  data: {
+                    userId: user.id,
+                    registrationPending: true,
+                  },
+                });
+              } else if (dto.role === Role.LAWYER) {
+                await tx.lawyerProfile.create({
+                  data: {
+                    userId: user.id,
+                    registrationPending: true,
+                  },
+                });
+              }
+            } else if (!existingRole.isActive) {
+              await tx.userRole.update({
+                where: { id: existingRole.id },
+                data: { isActive: true },
+              });
             }
+            // switch other roles to inactive
+            await tx.userRole.updateMany({
+              where: { userId: user.id, role: { not: dto.role } },
+              data: { isActive: false },
+            });
           }
           // Update last login time for existing user
           await tx.user.update({
@@ -1119,6 +1192,10 @@ export class AuthService {
 
       // Create JWT payload
       const activeRoles = finalUser.userRoles.map((ur) => ur.role);
+      const profileIds = {
+        clientId: finalUser.clientProfile?.id,
+        lawyerId: finalUser.lawyerProfile?.id,
+      };
       const profileId =
         finalUser.clientProfile?.id || finalUser.lawyerProfile?.id || '';
 
@@ -1127,6 +1204,7 @@ export class AuthService {
         email: finalUser.email || undefined,
         roles: activeRoles,
         profileId,
+        profileIds,
       };
 
       // Generate tokens
@@ -1167,7 +1245,8 @@ export class AuthService {
         error.stack,
       );
       throw new InternalServerErrorException(
-        'An error occurred during the verification process.',
+        'An error occurred during the verification process:',
+        error.message,
       );
     }
   }

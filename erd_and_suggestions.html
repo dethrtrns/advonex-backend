@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advonex Backend - ER Diagram and Schema Suggestions</title>
+    <style>
+        body { font-family: sans-serif; line-height: 1.6; padding: 20px; }
+        h1, h2, h3 { color: #333; }
+        pre { background-color: #f4f4f4; padding: 15px; border-radius: 5px; white-space: pre-wrap; word-wrap: break-word; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .page { page-break-after: always; }
+        @media print {
+            .no-print { display: none; }
+            .page { page-break-after: always; }
+            pre { white-space: pre-wrap !important; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="page">
+            <h1>Current Schema ER Diagram</h1>
+            <p>This is a visual representation of your current Prisma schema. You can print this page for an A4-sized ER diagram.</p>
+            <pre class="mermaid">
+erDiagram
+    User ||--o| ClientProfile : "has one"
+    User ||--o| LawyerProfile : "has one"
+    User ||--|{ UserRole : "has many"
+    User ||--|{ RefreshToken : "has many"
+
+    ClientProfile }|--|| User : "belongs to"
+    LawyerProfile }|--|| User : "belongs to"
+    UserRole }|--|| User : "belongs to"
+    RefreshToken }|--|| User : "belongs to"
+
+    ClientProfile ||--|{ SavedLawyer : "saves"
+    ClientProfile ||--|{ ConsultationRequest : "sends"
+
+    LawyerProfile ||--o| Education : "has one"
+    LawyerProfile }o--|| PracticeArea : "has specialization"
+    LawyerProfile }o--|| PracticeCourt : "has primary"
+    LawyerProfile ||--|{ LawyerPracticeArea : "practices in"
+    LawyerProfile ||--|{ LawyerPracticeCourt : "practices in"
+    LawyerProfile ||--|{ LawyerService : "offers"
+    LawyerProfile ||--|{ SavedLawyer : "is saved by"
+    LawyerProfile ||--|{ ConsultationRequest : "receives"
+
+    Education }|--|| LawyerProfile : "belongs to"
+
+    PracticeArea ||--|{ LawyerPracticeArea : "is practiced by"
+    LawyerPracticeArea }|--|| PracticeArea : "area"
+    LawyerPracticeArea }|--|| LawyerProfile : "lawyer"
+
+    PracticeCourt ||--|{ LawyerPracticeCourt : "is practiced in"
+    LawyerPracticeCourt }|--|| PracticeCourt : "court"
+    LawyerPracticeCourt }|--|| LawyerProfile : "lawyer"
+
+    Service ||--|{ LawyerService : "is offered by"
+    LawyerService }|--|| Service : "service"
+    LawyerService }|--|| LawyerProfile : "lawyer"
+
+    SavedLawyer }|--|| ClientProfile : "saved by"
+    SavedLawyer }|--|| LawyerProfile : "saved lawyer"
+
+    ConsultationRequest }|--|| ClientProfile : "sent by"
+    ConsultationRequest }|--|| LawyerProfile : "received by"
+            </pre>
+        </div>
+
+        <div class="page">
+            <h2>Schema Improvement Suggestions</h2>
+            <p>Here are some suggestions to improve your database schema, including the one you mentioned:</p>
+            <ol>
+                <li>
+                    <h3>Normalize `PracticeCourt`</h3>
+                    <p><strong>Problem:</strong> As you correctly pointed out, the `PracticeCourt` model currently combines `name` and `location`, leading to data redundancy. For example, "High Court" might be repeated for many different locations.</p>
+                    <p><strong>Suggestion:</strong> Split `PracticeCourt` into two distinct models: `CourtType` and `Location`. Then, create a new `Court` model that links a `CourtType` with a `Location`. This creates a more normalized and scalable structure.</p>
+                    <ul>
+                        <li>`CourtType`: Stores the type of court (e.g., "Supreme Court", "High Court", "District Court").</li>
+                        <li>`Location`: Stores geographical locations (e.g., "Delhi", "Mumbai", "Bangalore").</li>
+                        <li>`Court`: A join table that represents a specific court instance, like the "High Court" in "Delhi".</li>
+                    </ul>
+                </li>
+                <li>
+                    <h3>Simplify Lawyer Specialization and Primary Court</h3>
+                    <p><strong>Problem:</strong> The `LawyerProfile` has both a direct one-to-many relation (`specialization`, `primaryCourt`) and a many-to-many relation (`practiceAreas`, `practiceCourts`) for the same concepts. This is redundant and can be simplified.</p>
+                    <p><strong>Suggestion:</strong> Remove the direct one-to-many relations. Use the existing many-to-many join tables (`LawyerPracticeArea`, `LawyerPracticeCourt`) and add a boolean flag (e.g., `isSpecialization` or `isPrimary`) to them. This indicates if a particular area is a specialization or if a court is the lawyer's primary court, while keeping the data structure clean.</p>
+                </li>
+                <li>
+                    <h3>Consolidate OTP Models</h3>
+                    <p><strong>Problem:</strong> You have two separate models, `PhoneOtp` and `EmailOtp`, which are very similar in structure and purpose.</p>
+                    <p><strong>Suggestion:</strong> Merge them into a single `Otp` model. This new model would have a `type` field (an enum of `EMAIL` or `PHONE`) and a `target` field (a string to store the email address or phone number). This reduces redundancy and simplifies the logic for handling OTPs.</p>
+                </li>
+                <li>
+                    <h3>Standardize Naming and Relations</h3>
+                    <p><strong>Problem:</strong> Some relation names could be more explicit, and naming could be more consistent.</p>
+                    <p><strong>Suggestion:</strong> I'll adjust some field and relation names for clarity and consistency. For example, renaming `userRoles` on the `User` model to just `roles` is more conventional.</p>
+                </li>
+            </ol>
+        </div>
+
+        <div class="page">
+            <h2>Updated Prisma Schema</h2>
+            <p>Here is the proposed `schema.prisma` file with the suggested improvements applied.</p>
+            <pre>
+// This is your Prisma schema file
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- Core Authentication & Profiles ---
+
+model User {
+  id            String        @id @default(uuid())
+  phoneNumber   String?       @unique
+  email         String?       @unique
+  accountStatus AccountStatus @default(ACTIVE)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  lastLogin     DateTime?
+
+  clientProfile ClientProfile?
+  lawyerProfile LawyerProfile?
+  refreshTokens RefreshToken[]
+  roles         UserRole[]
+}
+
+model UserRole {
+  id        String   @id @default(uuid())
+  role      Role
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+
+  @@unique([userId, role])
+  @@index([userId])
+}
+
+model ClientProfile {
+  id                  String                @id @default(uuid())
+  name                String?
+  photo               String?
+  registrationPending Boolean               @default(true)
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  user                User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId              String                @unique
+  savedLawyers        SavedLawyer[]         @relation("ClientSaves")
+  sentRequests        ConsultationRequest[] @relation("ClientRequests")
+}
+
+model LawyerProfile {
+  id                  String                @id @default(uuid())
+  name                String?
+  photo               String?
+  experience          Int?
+  bio                 String?
+  consultFee          Int?
+  barId               String?
+  isVerified          Boolean               @default(false)
+  registrationPending Boolean               @default(true)
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  user                User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId              String                @unique
+  practiceAreas       LawyerPracticeArea[]
+  practiceCourts      LawyerCourt[]
+  education           Education?
+  services            LawyerService[]
+  savedBy             SavedLawyer[]         @relation("SavedByClients")
+  receivedRequests    ConsultationRequest[] @relation("LawyerRequests")
+}
+
+// --- Lawyer Detail & Predefined List Models ---
+
+model Education {
+  id              String        @id @default(uuid())
+  degree          String
+  institution     String
+  year            Int
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  lawyerProfile   LawyerProfile @relation(fields: [lawyerProfileId], references: [id], onDelete: Cascade)
+  lawyerProfileId String        @unique
+}
+
+model PracticeArea {
+  id                String               @id @default(uuid())
+  name              String               @unique
+  description       String?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  practicingLawyers LawyerPracticeArea[]
+}
+
+model LawyerPracticeArea {
+  lawyerProfileId  String
+  practiceAreaId   String
+  isSpecialization Boolean  @default(false) // New field
+  assignedAt       DateTime @default(now())
+  lawyerProfile    LawyerProfile @relation(fields: [lawyerProfileId], references: [id], onDelete: Cascade)
+  practiceArea     PracticeArea  @relation(fields: [practiceAreaId], references: [id], onDelete: Cascade)
+
+  @@id([lawyerProfileId, practiceAreaId])
+  @@index([practiceAreaId])
+}
+
+// --- NEW: Normalized Court and Location Models ---
+
+model Location {
+  id        String   @id @default(uuid())
+  name      String   @unique // e.g., "Delhi", "Mumbai"
+  state     String?
+  country   String   @default("India")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  courts    Court[]
+}
+
+model CourtType {
+  id        String   @id @default(uuid())
+  name      String   @unique // e.g., "Supreme Court", "High Court"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  courts    Court[]
+}
+
+model Court {
+  id          String        @id @default(uuid())
+  locationId  String
+  courtTypeId String
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  location    Location      @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  courtType   CourtType     @relation(fields: [courtTypeId], references: [id], onDelete: Restrict)
+  lawyers     LawyerCourt[]
+
+  @@unique([locationId, courtTypeId])
+}
+
+model LawyerCourt {
+  lawyerProfileId String
+  courtId         String
+  isPrimary       Boolean  @default(false) // New field
+  assignedAt      DateTime @default(now())
+  lawyerProfile   LawyerProfile @relation(fields: [lawyerProfileId], references: [id], onDelete: Cascade)
+  court           Court         @relation(fields: [courtId], references: [id], onDelete: Cascade)
+
+  @@id([lawyerProfileId, courtId])
+  @@index([courtId])
+}
+
+
+model Service {
+  id           String          @id @default(uuid())
+  name         String          @unique
+  description  String?
+  isPredefined Boolean         @default(false)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  lawyers      LawyerService[]
+}
+
+model LawyerService {
+  lawyerProfileId String
+  serviceId       String
+  assignedAt      DateTime      @default(now())
+  lawyerProfile   LawyerProfile @relation(fields: [lawyerProfileId], references: [id], onDelete: Cascade)
+  service         Service       @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@id([lawyerProfileId, serviceId])
+  @@index([serviceId])
+}
+
+// --- Interaction Models ---
+
+model SavedLawyer {
+  id              String        @id @default(uuid())
+  clientProfileId String
+  lawyerProfileId String
+  createdAt       DateTime      @default(now())
+  client          ClientProfile @relation("ClientSaves", fields: [clientProfileId], references: [id], onDelete: Cascade)
+  lawyerProfile   LawyerProfile @relation("SavedByClients", fields: [lawyerProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([clientProfileId, lawyerProfileId])
+  @@index([clientProfileId])
+  @@index([lawyerProfileId])
+}
+
+model ConsultationRequest {
+  id                String         @id @default(cuid())
+  clientProfileId   String
+  lawyerProfileId   String
+  message           String
+  status            RequestStatus  @default(PENDING)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  response          String?
+  responseTimestamp DateTime?
+  responseStatus    ResponseStatus @default(PENDING)
+  responseReason    String?
+  clientProfile     ClientProfile  @relation("ClientRequests", fields: [clientProfileId], references: [id], onDelete: Cascade)
+  lawyerProfile     LawyerProfile  @relation("LawyerRequests", fields: [lawyerProfileId], references: [id], onDelete: Cascade)
+
+  @@index([clientProfileId])
+  @@index([lawyerProfileId])
+}
+
+// --- Authentication Support ---
+
+// NEW: Consolidated OTP Model
+model Otp {
+  id        String   @id @default(cuid())
+  target    String   // Phone number or email address
+  type      OtpType  // EMAIL or PHONE
+  otp       String
+  expiresAt DateTime
+  isUsed    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([target, type])
+  @@index([expiresAt])
+}
+
+model RefreshToken {
+  id          String   @id @default(uuid())
+  hashedToken String
+  userId      String
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+
+// --- Enums ---
+
+enum Role {
+  CLIENT
+  LAWYER
+  ADMIN
+}
+
+enum RequestStatus {
+  PENDING
+  VIEWED
+  RESPONDED
+  CLOSED
+}
+
+enum AccountStatus {
+  ACTIVE
+  SUSPENDED
+  DEACTIVATED
+}
+
+enum ResponseStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+// NEW: Enum for OTP Type
+enum OtpType {
+  PHONE
+  EMAIL
+}
+            </pre>
+        </div>
+
+        <div class="page">
+            <h1>Updated Schema ER Diagram</h1>
+            <p>This is the ER diagram for the improved schema. Notice the new `Location`, `CourtType`, and `Court` tables, and the consolidated `Otp` model.</p>
+            <pre class="mermaid">
+erDiagram
+    User ||--o| ClientProfile : "has one"
+    User ||--o| LawyerProfile : "has one"
+    User ||--|{ UserRole : "has many"
+    User ||--|{ RefreshToken : "has many"
+
+    ClientProfile }|--|| User : "belongs to"
+    LawyerProfile }|--|| User : "belongs to"
+    UserRole }|--|| User : "belongs to"
+    RefreshToken }|--|| User : "belongs to"
+
+    ClientProfile ||--|{ SavedLawyer : "saves"
+    ClientProfile ||--|{ ConsultationRequest : "sends"
+
+    LawyerProfile ||--o| Education : "has one"
+    LawyerProfile ||--|{ LawyerPracticeArea : "practices in"
+    LawyerProfile ||--|{ LawyerCourt : "practices in"
+    LawyerProfile ||--|{ LawyerService : "offers"
+    LawyerProfile ||--|{ SavedLawyer : "is saved by"
+    LawyerProfile ||--|{ ConsultationRequest : "receives"
+
+    Education }|--|| LawyerProfile : "belongs to"
+
+    PracticeArea ||--|{ LawyerPracticeArea : "is practiced by"
+    LawyerPracticeArea }|--|| PracticeArea : "area"
+    LawyerPracticeArea }|--|| LawyerProfile : "lawyer"
+
+    Location ||--|{ Court : "has"
+    CourtType ||--|{ Court : "has"
+    Court }|--|| Location : "is at"
+    Court }|--|| CourtType : "is a"
+    Court ||--|{ LawyerCourt : "is practiced in by"
+
+    LawyerCourt }|--|| LawyerProfile : "lawyer"
+    LawyerCourt }|--|| Court : "court"
+
+    Service ||--|{ LawyerService : "is offered by"
+    LawyerService }|--|| Service : "service"
+    LawyerService }|--|| LawyerProfile : "lawyer"
+
+    SavedLawyer }|--|| ClientProfile : "saved by"
+    SavedLawyer }|--|| LawyerProfile : "saved lawyer"
+
+    ConsultationRequest }|--|| ClientProfile : "sent by"
+    ConsultationRequest }|--|| LawyerProfile : "received by"
+
+    Otp ||--|| User : "verifies"
+            </pre>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script>mermaid.initialize({startOnLoad:true});</script>
+</body>
+</html>
