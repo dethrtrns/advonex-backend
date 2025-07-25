@@ -27,7 +27,8 @@ import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { JwtService } from '@nestjs/jwt';
 import { JwtPayload } from './strategies/jwt.strategy';
 import { SmsService } from '../sms/sms.service';
-import * as bcrypt from 'bcrypt';
+// import * as bcrypt from 'bcrypt';
+import * as argon2 from "argon2";
 import { RefreshTokenPayload } from './strategies/refresh-token.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { ClientProfile, LawyerProfile } from '@prisma/client';
@@ -98,7 +99,7 @@ export class AuthService {
   }
 
   private async hashRefreshToken(token: string): Promise<string> {
-    return bcrypt.hash(token, this.HASH_ROUNDS);
+    return argon2.hash(token);
   }
 
   private calculateRefreshTokenExpiry(): Date {
@@ -519,9 +520,9 @@ export class AuthService {
       }
 
       // 3. Compare the incoming token hash with the stored hash
-      const isMatch = await bcrypt.compare(
-        incomingRefreshToken,
+      const isMatch = await argon2.verify(
         storedTokenRecord.hashedToken,
+        incomingRefreshToken,
       );
       console.log('isMatch', isMatch);
 
@@ -596,22 +597,22 @@ export class AuthService {
         newTokens.refreshToken,
       );
       //test bcrypt match
-      const testMatch = await bcrypt.compare(
-        incomingRefreshToken,
-        newHashedRefreshToken,
-      );
-      console.log('test bcrypt Match', testMatch); // should be false but returns true
+      // const testMatch = await bcrypt.compare(
+      //   incomingRefreshToken,
+      //   newHashedRefreshToken,
+      // );
+      // console.log('test bcrypt Match', testMatch); // should be false but returns true
       // test end
 
-      // Test2 independant bcrypt test
+      // Test2 independant argon test
       const token1 =
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3MTE0YWMzYy1iZTY5LTQ1NzUtOGY0Ni00ZmEzMzIxOTdjODAiLCJpYXQiOjE3NDg3Njc4NzYsImV4cCI6MTc1MTM1OTg3Nn0.S81FlZC59_4uTuhdLcSFLKD8pUGGiLySKiSDnYDOhqY'; // simulate incoming
       const token2 =
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3MTE0YWMzYy1iZTY5LTQ1NzUtOGY0Ni00ZmEzMzIxOTdjODAiLCJpYXQiOjE3NDg3NzI3ODgsImV4cCI6MTc1MTM2NDc4OH0.ajeeIHE72siwAHTrp_NriEgbujj9DQp_4pWqgBsSBS0'; // simulate new
-      const hash2 = await bcrypt.hash(token2, 10);
-      const match = await bcrypt.compare(token1, hash2);
+      const hash2 = await argon2.hash(token2);
+      const match = await argon2.verify( hash2,token1);
       // console.log('token1 === token2?', token1 === token2); // false
-      console.log('match:', match); // should be false but returns true
+      console.log('match:', match); 
       // test end
 
       const newRefreshTokenExpiry = this.calculateRefreshTokenExpiry();
@@ -1023,7 +1024,13 @@ export class AuthService {
       return false;
     }
   }
-
+// Function to 
+// Verify OTP (marks IsUsed: true)
+  // Create user if needed(Based on email)
+  //Add roles and create profile based on the role(If needed)
+  // Creates new Access & Refresh tokens (With jwt payload)
+  // Hashes then stores the Refresh token in DB
+  // Finally returns Tokens and user data in Res
   async verifyEmailOtp(dto: EmailOtpVerifyDto): Promise<{
     accessToken: string;
     refreshToken: string;
@@ -1191,6 +1198,8 @@ export class AuthService {
       const { user: finalUser, isNewUser } = result;
 
       // Create JWT payload
+      // Access token only contains role where active=true
+      //  (Role managment from backend) user has to login again if switches sides(Client/lawyer)
       const activeRoles = finalUser.userRoles.map((ur) => ur.role);
       const profileIds = {
         clientId: finalUser.clientProfile?.id,
