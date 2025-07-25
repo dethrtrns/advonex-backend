@@ -28,7 +28,7 @@ import { JwtService } from '@nestjs/jwt';
 import { JwtPayload } from './strategies/jwt.strategy';
 import { SmsService } from '../sms/sms.service';
 // import * as bcrypt from 'bcrypt';
-import * as argon2 from "argon2";
+import * as argon2 from "argon2"; // TODO: bcrypt uninstalled???
 import { RefreshTokenPayload } from './strategies/refresh-token.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { ClientProfile, LawyerProfile } from '@prisma/client';
