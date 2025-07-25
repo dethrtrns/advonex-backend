@@ -6,8 +6,16 @@ import {
   User,
   ClientProfile,
   LawyerProfile,
+  Country,
+  State,
+  City,
+  Location,
 } from '@prisma/client';
 import {
+  countries,
+  states,
+  cities,
+  locations,
   practiceAreas,
   practiceCourts,
   services,
@@ -47,7 +55,35 @@ async function main() {
   await prisma.service.deleteMany();
   await prisma.practiceCourt.deleteMany();
   await prisma.practiceArea.deleteMany();
+  await prisma.location.deleteMany();
+  await prisma.city.deleteMany();
+  await prisma.state.deleteMany();
+  await prisma.country.deleteMany();
   console.log('Cleanup completed.');
+
+  // Seed Countries
+  for (const country of countries) {
+    await prisma.country.create({ data: country });
+    console.log(`Created country: ${country.name}`);
+  }
+
+  // Seed States
+  for (const state of states) {
+    await prisma.state.create({ data: state });
+    console.log(`Created state: ${state.name}`);
+  }
+
+  // Seed Cities
+  for (const city of cities) {
+    await prisma.city.create({ data: city });
+    console.log(`Created city: ${city.name}`);
+  }
+
+  // Seed Locations
+  for (const location of locations) {
+    await prisma.location.create({ data: location });
+    console.log(`Created location: ${location.address}`);
+  }
 
   // Seed Practice Areas
   const seededAreas: PracticeArea[] = [];
@@ -151,7 +187,7 @@ async function main() {
     const lawyerProfile = seededLawyerProfiles.find(
       (p) => p.id === lpa.lawyerProfileId,
     );
-    const practiceArea = seededAreas.find((a) => a.id === lpa.practiceAreaId);
+    const practiceArea = seededAreas.find((a) => a.name === lpa.practiceAreaName);
 
     if (lawyerProfile && practiceArea) {
       await prisma.lawyerPracticeArea.create({
@@ -170,7 +206,7 @@ async function main() {
       (p) => p.id === lpc.lawyerProfileId,
     );
     const practiceCourt = seededCourts.find(
-      (c) => c.id === lpc.practiceCourtId,
+      (c) => c.name === lpc.practiceCourtName,
     );
 
     if (lawyerProfile && practiceCourt) {

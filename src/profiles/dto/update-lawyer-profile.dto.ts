@@ -8,8 +8,11 @@ import {
   IsUUID,
   MaxLength,
   IsBoolean,
+  IsArray,
 } from 'class-validator';
 import { LawyerProfile } from '@prisma/client';
+import { PracticeCourtDto } from './practice-court.dto';
+import { PracticeAreaDto } from './practice-area.dto';
 
 /**
  * DTO for updating a lawyer's profile.
@@ -108,6 +111,39 @@ export class UpdateLawyerProfileDto implements Partial<LawyerProfile> {
   @IsOptional()
   @IsString()
   primaryCourt?: string;
+
+  // Review
+  @ApiPropertyOptional({
+    description: 'Practice Courts',
+    type: 'array',
+    items: {
+      type: 'object',
+    properties: {
+      name: { type: 'string' },
+      location: { type: 'string',  nullable: true },
+     
+    },
+}})
+
+  @IsOptional()
+  @IsArray()
+  practiceCourts?: PracticeCourtDto[] | undefined;
+
+  @ApiPropertyOptional({
+    description: 'Practice Areas',
+    type: 'array',
+    items: {
+      type: 'object',
+    properties: {
+      name: { type: 'string' },
+      description: { type: 'string', nullable: true },
+     
+    },
+}})
+  @IsOptional()
+  @IsArray()
+  practiceAreas?: PracticeAreaDto[] | undefined;
+  
 
   @ApiPropertyOptional({
     description: 'Education details',

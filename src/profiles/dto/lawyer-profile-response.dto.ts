@@ -70,8 +70,8 @@ export class LawyerProfileResponseDto implements LawyerProfile {
 
   @ApiProperty({ type: () => [PracticeAreaDto] })
   practiceAreas: PracticeAreaDto[];
-
-  @ApiProperty({ type: () => [PracticeCourtDto] })
+// Sould put default value undefined for practice courts ?
+  @ApiProperty({ type: () => [PracticeCourtDto], nullable: true })
   practiceCourts: PracticeCourtDto[];
 
   @ApiProperty({ type: () => [ServiceDto] })

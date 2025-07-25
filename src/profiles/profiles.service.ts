@@ -11,6 +11,8 @@ import { ClientProfile, LawyerProfile, Role, Prisma } from '@prisma/client';
 import { JwtPayload } from '../auth/strategies/jwt.strategy';
 import { UpdateClientProfileDto } from './dto/update-client-profile.dto';
 import { UpdateLawyerProfileDto } from './dto/update-lawyer-profile.dto';
+import { equals } from 'class-validator';
+import { practiceCourts } from 'src/data/seedData';
 
 @Injectable()
 export class ProfilesService {
@@ -191,51 +193,22 @@ export class ProfilesService {
     }
 
     try {
-      const updateData: Prisma.LawyerProfileUpdateInput = {
-        name: updateLawyerProfileDto.name,
-        photo: updateLawyerProfileDto.photo,
-        location: updateLawyerProfileDto.location,
-        experience: updateLawyerProfileDto.experience,
-        bio: updateLawyerProfileDto.bio,
-        consultFee: updateLawyerProfileDto.consultFee,
-        barId: updateLawyerProfileDto.barId,
-        // default value for isVerified?
-        isVerified: updateLawyerProfileDto.isVerified,
-        registrationPending: false,
-        education: updateLawyerProfileDto.education
-          ? {
-              upsert: {
-                create: {
-                  degree: updateLawyerProfileDto.education.degree,
-                  institution: updateLawyerProfileDto.education.institution,
-                  year: updateLawyerProfileDto.education.year,
-                },
-                update: {
-                  degree: updateLawyerProfileDto.education.degree,
-                  institution: updateLawyerProfileDto.education.institution,
-                  year: updateLawyerProfileDto.education.year,
-                },
-              },
-            }
-          : undefined,
-      };
-      // Finding prsctice area & courts based on names
+      // Handle specialization
+      let specializationId: string | null = null;
       if (updateLawyerProfileDto.specialization) {
         const specialization = await this.findOrCreatePracticeArea(
           updateLawyerProfileDto.specialization,
         );
-        updateData.specialization = {
-          connect: { id: specialization.id },
-        };
+        specializationId = specialization.id;
       }
 
+      // Handle primary court
+      let primaryCourtId: string | null = null;
       if (updateLawyerProfileDto.primaryCourt) {
         const primaryCourt = await this.findOrCreatePracticeCourt(
           updateLawyerProfileDto.primaryCourt,
         );
-        updateData.primaryCourt = {
-          connect: { id: primaryCourt.id },
-        };
+        primaryCourtId = primaryCourt.id;
       }
 
       // Update the profile
@@ -243,7 +216,37 @@ export class ProfilesService {
         where: {
           userId: user.sub,
         },
-        data: updateData,
+        data: {
+          name: updateLawyerProfileDto.name,
+          photo: updateLawyerProfileDto.photo,
+          location: updateLawyerProfileDto.location,
+          experience: updateLawyerProfileDto.experience,
+          bio: updateLawyerProfileDto.bio,
+          consultFee: updateLawyerProfileDto.consultFee,
+          barId: updateLawyerProfileDto.barId,
+          isVerified: updateLawyerProfileDto.isVerified,
+          registrationPending: false, // Mark registration as complete
+          specializationId: specializationId,
+          primaryCourtId: primaryCourtId,
+          education: updateLawyerProfileDto.education
+            ? {
+                upsert: {
+                  create: {
+                    degree: updateLawyerProfileDto.education.degree,
+                    institution: updateLawyerProfileDto.education.institution,
+                    year: updateLawyerProfileDto.education.year,
+                  },
+                  update: {
+                    degree: updateLawyerProfileDto.education.degree,
+                    institution: updateLawyerProfileDto.education.institution,
+                    year: updateLawyerProfileDto.education.year,
+                  },
+                },
+              }
+            : undefined,
+          // Note: Handling for practiceAreas, practiceCourts, services (many-to-many) needs careful consideration
+          // This example focuses on direct fields and simple relations. Complex relations might require transactions or more detailed logic.
+        },
         include: {
           practiceAreas: { include: { practiceArea: true } },
           practiceCourts: { include: { practiceCourt: true } },
@@ -273,6 +276,8 @@ export class ProfilesService {
       );
     }
   }
+
+
 
   /**
    * Finds an existing practice area by name or creates a new one if not found.
@@ -314,3 +319,5 @@ export class ProfilesService {
     });
   }
 }
+
+

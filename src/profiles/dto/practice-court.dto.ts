@@ -12,7 +12,7 @@ export class PracticeCourtDto implements PracticeCourt {
   @ApiProperty({ description: 'Name of the practice court' })
   name: string;
 
-  @ApiProperty({ description: 'Location of the practice court' })
+  @ApiProperty({ description: 'Location of the practice court', nullable: true })
   location: string;
 
   @ApiProperty({ description: 'When the practice court was created' })
