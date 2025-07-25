@@ -1,64 +1,27 @@
-import { Role, RequestStatus, AccountStatus } from '@prisma/client';
+import { Role, RequestStatus, AccountStatus, LocationType } from '@prisma/client';
+import { countries } from './countries';
+import { states } from './states';
+import { cities } from './cities';
+import { practiceAreas } from './practiceAreas';
+import { practiceCourts } from './practiceCourts';
+
+// --- Location Static Data ---
+
+export const locations = [
+  // Practice Courts Locations (India)
+  { id: 'loc-court-delhi', cityId: '2b3c4d5e-6f7a-8901-2345-67890abcdef1', address: 'Supreme Court of India, Tilak Marg', locationOf: LocationType.PRACTICE_COURT },
+  { id: 'loc-court-mumbai', cityId: '1a2b3c4d-5e6f-7890-1234-567890abcdef', address: 'High Court, Fort, Mumbai', locationOf: LocationType.PRACTICE_COURT },
+  { id: 'loc-court-bangalore', cityId: '3c4d5e6f-7a8b-9012-3456-7890abcdef2', address: 'District Court, Nrupathunga Road, Bangalore', locationOf: LocationType.PRACTICE_COURT },
+  { id: 'loc-court-chennai', cityId: '6f7a8b9c-0d1e-2345-6789-0abcdef5', address: 'Family Court, High Court Campus, Chennai', locationOf: LocationType.PRACTICE_COURT },
+  { id: 'loc-court-kolkata', cityId: '7a8b9c0d-1e2f-3456-7890-1bcdef6', address: 'Consumer Court, Creed Row, Kolkata', locationOf: LocationType.PRACTICE_COURT },
+  // Lawyer Locations (Thailand)
+  { id: 'loc-lawyer-bkk', cityId: 'a1b2c3d4-e5f6-7890-1234-567890abcde1', address: '123 Sukhumvit Road, Bangkok', locationOf: LocationType.LAWYER },
+  { id: 'loc-lawyer-cnx', cityId: 'a1b2c3d4-e5f6-7890-1234-567890abcde2', address: '456 Nimmanhaemin Road, Chiang Mai', locationOf: LocationType.LAWYER },
+  { id: 'loc-lawyer-hkt', cityId: 'a1b2c3d4-e5f6-7890-1234-567890abcde3', address: '789 Patong Beach Road, Phuket', locationOf: LocationType.LAWYER },
+];
+
 
 // --- Predefined Lists ---
-
-export const practiceAreas = [
-  {
-    id: '550e8400-e29b-41d4-a716-446655440000', // Corporate Law
-    name: 'Corporate Law',
-    description: 'Legal matters related to business and corporate entities',
-  },
-  {
-    id: '550e8400-e29b-41d4-a716-446655440001', // Criminal Law
-    name: 'Criminal Law',
-    description: 'Legal matters related to criminal offenses and defense',
-  },
-  {
-    id: '550e8400-e29b-41d4-a716-446655440002', // Family Law
-    name: 'Family Law',
-    description:
-      'Legal matters related to family relationships and domestic issues',
-  },
-  {
-    id: '550e8400-e29b-41d4-a716-446655440003', // Real Estate Law
-    name: 'Real Estate Law',
-    description:
-      'Legal matters related to property and real estate transactions',
-  },
-  {
-    id: '550e8400-e29b-41d4-a716-446655440004', // Intellectual Property Law
-    name: 'Intellectual Property Law',
-    description: 'Legal matters related to patents, trademarks, and copyrights',
-  },
-];
-
-export const practiceCourts = [
-  {
-    id: '550e8400-e29b-41d4-a716-446655440005', // Supreme Court
-    name: 'Supreme Court',
-    location: 'New Delhi',
-  },
-  {
-    id: '550e8400-e29b-41d4-a716-446655440006', // High Court
-    name: 'High Court',
-    location: 'Mumbai',
-  },
-  {
-    id: '550e8400-e29b-41d4-a716-446655440007', // District Court
-    name: 'District Court',
-    location: 'Bangalore',
-  },
-  {
-    id: '550e8400-e29b-41d4-a716-446655440008', // Family Court
-    name: 'Family Court',
-    location: 'Chennai',
-  },
-  {
-    id: '550e8400-e29b-41d4-a716-446655440009', // Consumer Court
-    name: 'Consumer Court',
-    location: 'Kolkata',
-  },
-];
 
 export const services = [
   {
@@ -131,38 +94,38 @@ export const users = [
   // Clients
   {
     id: '550e8400-e29b-41d4-a716-446655440020', // Client 1
-    phoneNumber: '+66810000001',
+    phoneNumber: '+919876543210',
     email: 'alice.adams@email.com',
     accountStatus: AccountStatus.ACTIVE,
   },
   {
     id: '550e8400-e29b-41d4-a716-446655440021', // Client 2
-    phoneNumber: '+66810000002',
+    phoneNumber: '+919876543211',
     email: 'bob.brown@email.com',
     accountStatus: AccountStatus.ACTIVE,
   },
   {
     id: '550e8400-e29b-41d4-a716-446655440022', // Client 3
-    phoneNumber: '+66810000003',
+    phoneNumber: '+919876543212',
     email: 'carol.clark@email.com',
     accountStatus: AccountStatus.ACTIVE,
   },
   // Lawyers
   {
     id: '550e8400-e29b-41d4-a716-446655440023', // Lawyer 1
-    phoneNumber: '+66810000011',
+    phoneNumber: '+919876543213',
     email: 'john.smith@email.com',
     accountStatus: AccountStatus.ACTIVE,
   },
   {
     id: '550e8400-e29b-41d4-a716-446655440024', // Lawyer 2
-    phoneNumber: '+66810000012',
+    phoneNumber: '+919876543214',
     email: 'sarah.johnson@email.com',
     accountStatus: AccountStatus.ACTIVE,
   },
   {
     id: '550e8400-e29b-41d4-a716-446655440025', // Lawyer 3
-    phoneNumber: '+66810000013',
+    phoneNumber: '+919876543215',
     email: 'michael.brown@email.com',
     accountStatus: AccountStatus.ACTIVE,
   },
@@ -210,7 +173,7 @@ export const lawyerProfiles = [
     userId: '550e8400-e29b-41d4-a716-446655440023',
     name: 'John Smith',
     photo: 'https://example.com/photos/lawyer1.jpg',
-    location: 'Bangkok, Thailand',
+    locationId: 'loc-lawyer-bkk',
     experience: 10,
     bio: 'Experienced corporate lawyer specializing in mergers and acquisitions.',
     consultFee: 3000,
@@ -218,14 +181,14 @@ export const lawyerProfiles = [
     isVerified: true,
     registrationPending: false,
     specializationName: 'Corporate Law',
-    primaryCourtName: 'High Court',
+    primaryCourtName: 'High Courts',
   },
   {
     id: '550e8400-e29b-41d4-a716-446655440030', // Lawyer Profile 2
     userId: '550e8400-e29b-41d4-a716-446655440024',
     name: 'Sarah Johnson',
     photo: 'https://example.com/photos/lawyer2.jpg',
-    location: 'Chiang Mai, Thailand',
+    locationId: 'loc-lawyer-cnx',
     experience: 5,
     bio: 'Dedicated criminal defense attorney with a focus on client rights.',
     consultFee: 2000,
@@ -233,14 +196,14 @@ export const lawyerProfiles = [
     isVerified: false,
     registrationPending: false,
     specializationName: 'Criminal Law',
-    primaryCourtName: 'District Court',
+    primaryCourtName: 'District Courts',
   },
   {
     id: '550e8400-e29b-41d4-a716-446655440031', // Lawyer Profile 3
     userId: '550e8400-e29b-41d4-a716-446655440025',
     name: 'Michael Brown',
     photo: 'https://example.com/photos/lawyer3.jpg',
-    location: 'Phuket, Thailand',
+    locationId: 'loc-lawyer-hkt',
     experience: 8,
     bio: 'Specialized in real estate and property law with extensive experience in coastal properties.',
     consultFee: 2500,
@@ -248,7 +211,7 @@ export const lawyerProfiles = [
     isVerified: true,
     registrationPending: false,
     specializationName: 'Real Estate Law',
-    primaryCourtName: 'Family Court',
+    primaryCourtName: 'Family Courts',
   },
 ];
 
@@ -258,21 +221,21 @@ export const educations = [
   {
     id: '550e8400-e29b-41d4-a716-446655440032', // Education 1
     lawyerProfileId: '550e8400-e29b-41d4-a716-446655440029',
-    institution: 'Thammasat University Faculty of Law',
+    institution: 'National Law School of India University',
     degree: 'Bachelor of Laws (LL.B.)',
     year: 2014,
   },
   {
     id: '550e8400-e29b-41d4-a716-446655440033', // Education 2
     lawyerProfileId: '550e8400-e29b-41d4-a716-446655440030',
-    institution: 'Chulalongkorn University Faculty of Law',
+    institution: 'Faculty of Law, University of Delhi',
     degree: 'Bachelor of Laws (LL.B.)',
     year: 2019,
   },
   {
     id: '550e8400-e29b-41d4-a716-446655440034', // Education 3
     lawyerProfileId: '550e8400-e29b-41d4-a716-446655440031',
-    institution: 'Mahidol University Faculty of Law',
+    institution: 'Symbiosis Law School',
     degree: 'Bachelor of Laws (LL.B.)',
     year: 2016,
   },
@@ -284,35 +247,35 @@ export const lawyerPracticeAreas = [
   // Lawyer 1 (Corporate) also does Real Estate and Intellectual Property
   {
     lawyerProfileId: '550e8400-e29b-41d4-a716-446655440029',
-    practiceAreaId: '550e8400-e29b-41d4-a716-446655440000',
+    practiceAreaName: 'Corporate Law',
   },
   {
     lawyerProfileId: '550e8400-e29b-41d4-a716-446655440029',
-    practiceAreaId: '550e8400-e29b-41d4-a716-446655440003',
+    practiceAreaName: 'Real Estate Law',
   },
   {
     lawyerProfileId: '550e8400-e29b-41d4-a716-446655440029',
-    practiceAreaId: '550e8400-e29b-41d4-a716-446655440004',
+    practiceAreaName: 'Intellectual Property Law',
   },
 
   // Lawyer 2 (Criminal) also does Family Law
   {
     lawyerProfileId: '550e8400-e29b-41d4-a716-446655440030',
-    practiceAreaId: '550e8400-e29b-41d4-a716-446655440001',
+    practiceAreaName: 'Criminal Law',
   },
   {
     lawyerProfileId: '550e8400-e29b-41d4-a716-446655440030',
-    practiceAreaId: '550e8400-e29b-41d4-a716-446655440002',
+    practiceAreaName: 'Family Law',
   },
 
   // Lawyer 3 (Real Estate) also does Corporate
   {
     lawyerProfileId: '550e8400-e29b-41d4-a716-446655440031',
-    practiceAreaId: '550e8400-e29b-41d4-a716-446655440003',
+    practiceAreaName: 'Real Estate Law',
   },
   {
     lawyerProfileId: '550e8400-e29b-41d4-a716-446655440031',
-    practiceAreaId: '550e8400-e29b-41d4-a716-446655440000',
+    practiceAreaName: 'Corporate Law',
   },
 ];
 
@@ -320,31 +283,31 @@ export const lawyerPracticeCourts = [
   // Lawyer 1 practices in High Court and Supreme Court
   {
     lawyerProfileId: '550e8400-e29b-41d4-a716-446655440029',
-    practiceCourtId: '550e8400-e29b-41d4-a716-446655440006',
+    practiceCourtName: 'High Courts',
   },
   {
     lawyerProfileId: '550e8400-e29b-41d4-a716-446655440029',
-    practiceCourtId: '550e8400-e29b-41d4-a716-446655440005',
+    practiceCourtName: 'Supreme Court of India',
   },
 
   // Lawyer 2 practices in District Court and High Court
   {
     lawyerProfileId: '550e8400-e29b-41d4-a716-446655440030',
-    practiceCourtId: '550e8400-e29b-41d4-a716-446655440007',
+    practiceCourtName: 'District Courts',
   },
   {
     lawyerProfileId: '550e8400-e29b-41d4-a716-446655440030',
-    practiceCourtId: '550e8400-e29b-41d4-a716-446655440006',
+    practiceCourtName: 'High Courts',
   },
 
   // Lawyer 3 practices in Family Court and High Court
   {
     lawyerProfileId: '550e8400-e29b-41d4-a716-446655440031',
-    practiceCourtId: '550e8400-e29b-41d4-a716-446655440008',
+    practiceCourtName: 'Family Courts',
   },
   {
     lawyerProfileId: '550e8400-e29b-41d4-a716-446655440031',
-    practiceCourtId: '550e8400-e29b-41d4-a716-446655440006',
+    practiceCourtName: 'High Courts',
   },
 ];
 
@@ -437,3 +400,22 @@ export const consultationRequests = [
     status: RequestStatus.RESPONDED,
   },
 ];
+
+export {
+  countries,
+  states,
+  cities,
+  practiceAreas,
+  practiceCourts,
+  // services, // Already exported
+  // users, // Already exported
+  // userRoles, // Already exported
+  // clientProfiles, // Already exported
+  // lawyerProfiles, // Already exported
+  // educations, // Already exported
+  // lawyerPracticeAreas, // Already exported
+  // lawyerPracticeCourts, // Already exported
+  // lawyerServices, // Already exported
+  // savedLawyers, // Already exported
+  // consultationRequests, // Already exported
+};

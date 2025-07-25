@@ -264,7 +264,7 @@ model Location {
   id String @id @default(uuid())
 
   isDeleted Boolean @default(false)
-  deletedAt DateTime
+  deletedAt DateTime?
   
   // Address components
   address   String?
