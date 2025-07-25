@@ -1,0 +1,84 @@
+task 1: Go through the project workspace and create a endpointsUsageGuideV1.md file for the frontend of the following endpoints(you can access related files/code in the workspace and ask me anything else you need to know.): 
+Authentication: 
+
+
+POST
+/auth/request-otp-email
+Request OTP via Email
+
+
+POST
+/auth/verify-otp-email
+Verify Email OTP
+
+
+POST
+/auth/refresh
+Refresh access token
+POST
+/auth/logout
+Logout user
+
+
+
+POST
+/auth/add-role
+Add or activate a role for the authenticated user
+
+
+
+GET
+/auth/me
+Get current user info
+
+
+
+Profiles: 
+
+
+GET
+/profiles/client
+Get client profile
+
+
+
+PUT
+/profiles/client
+Update client profile
+
+
+
+GET
+/profiles/lawyer
+Get lawyer profile
+
+
+
+PUT
+/profiles/lawyer
+Update lawyer profile
+
+
+The guide should provide info aboute: usage, behaviour, expectations(input & output both), etc.
+
+
+task2: also create a separate section at the bottom of the usage guide that answers the following queries of the frontend:
+``` 
+1. Authentication Token Details
+What it is: When a user successfully logs in, the backend generates a token to identify them for subsequent requests.
+What I need to know:
+Token Type: Is it a JSON Web Token (JWT) or some other kind of token?
+Storage: How is the token stored on the frontend?
+Is it in an httpOnly cookie (more secure, not accessible by client-side JavaScript)?
+Is it stored in localStorage or sessionStorage?
+Payload (if JWT): If it's a JWT, what information (payload) does it contain? Specifically, does it include the user's role (e.g., 'client', 'lawyer')? This is the most efficient way to handle roles.
+2. User Information Endpoint
+What it is: An API endpoint that the frontend can call to get information about the currently authenticated user.
+What I need to know:
+Endpoint URL: Is there an endpoint like /api/v1/auth/me or /api/v1/users/profile that returns the user's data?
+Response Data: What data does this endpoint return? Most importantly, does it return the user's role? (This is an alternative if the role is not in the JWT).
+3. User Roles
+What they are: The different permission levels for users in your application.
+What I need to know:
+List of Roles: I see client and lawyer from the file structure. Are there any other roles I should be aware of (e.g., admin, guest, unverified)?
+```
