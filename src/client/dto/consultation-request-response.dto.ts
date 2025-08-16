@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { RequestStatus } from '@prisma/client';
+import { LocationDetailsDto } from '../../common/dto/location-details.dto';
 
 /**
  * Data Transfer Object for a consultation request response.
@@ -17,7 +18,7 @@ export class ConsultationRequestResponseDto {
     id: string;
     name: string | null;
     photo?: string | null;
-    location?: string | null;
+    location?: LocationDetailsDto | null;
     experience?: number | null;
     bio?: string | null;
     consultFee?: number | null;

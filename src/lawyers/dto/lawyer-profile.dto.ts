@@ -6,6 +6,7 @@ import {
   Service,
   Education,
 } from '@prisma/client';
+import { LocationDetailsDto } from '../../common/dto/location-details.dto';
 
 // Define the PracticeArea enum values for Swagger documentation
 const PracticeAreaEnum = {
@@ -60,13 +61,6 @@ export class LawyerProfileDto {
   photo: string | null;
 
   @ApiProperty({
-    description: 'Location of the lawyer',
-    type: 'string',
-    nullable: true,
-  })
-  location: string | null;
-
-  @ApiProperty({
     description: 'Years of experience',
     type: 'number',
     nullable: true,
@@ -93,6 +87,13 @@ export class LawyerProfileDto {
     nullable: true,
   })
   barId: string | null;
+
+  @ApiProperty({
+    description: 'Location of the lawyer',
+    type: () => LocationDetailsDto,
+    nullable: true,
+  })
+  location: LocationDetailsDto | null;
 
   @ApiProperty({
     description: 'Whether the lawyer is verified',
@@ -128,11 +129,15 @@ export class LawyerProfileDto {
     properties: {
       id: { type: 'string', format: 'uuid' },
       name: { type: 'string' },
-      location: { type: 'string', nullable: true },
+      location: {
+        type: () => LocationDetailsDto,
+        nullable: true,
+        description: 'Location of the primary court',
+      },
       createdAt: { type: 'string', format: 'date-time' },
       updatedAt: { type: 'string', format: 'date-time' },
     },
-    additionalProperties: false,
+    additionalProperties: true,
   })
   primaryCourt: PracticeCourt | null;
 

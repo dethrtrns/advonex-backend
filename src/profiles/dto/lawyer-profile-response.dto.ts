@@ -4,6 +4,7 @@ import { PracticeAreaDto } from './practice-area.dto';
 import { PracticeCourtDto } from './practice-court.dto';
 import { ServiceDto } from './service.dto';
 import { EducationDto } from './education.dto';
+import { LocationDetailsDto } from '../../common/dto/location-details.dto';
 
 /**
  * DTO for lawyer profile response
@@ -20,8 +21,11 @@ export class LawyerProfileResponseDto implements LawyerProfile {
   @ApiProperty({ description: "Lawyer's profile photo URL", nullable: true })
   photo: string | null;
 
-  @ApiProperty({ description: "Lawyer's location", nullable: true })
-  location: string | null;
+  @ApiProperty({ description: "Lawyer's location ID", nullable: true })
+  locationId: string | null;
+
+  @ApiProperty({ type: () => LocationDetailsDto, nullable: true })
+  location: LocationDetailsDto | null;
 
   @ApiProperty({
     description: 'Years of professional experience',
