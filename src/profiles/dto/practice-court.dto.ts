@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { PracticeCourt } from '@prisma/client';
+import { LocationDetailsDto } from '../../common/dto/location-details.dto';
 
 /**
  * DTO for practice court information
@@ -12,8 +13,11 @@ export class PracticeCourtDto implements PracticeCourt {
   @ApiProperty({ description: 'Name of the practice court' })
   name: string;
 
-  @ApiProperty({ description: 'Location of the practice court', nullable: true })
-  location: string;
+  @ApiProperty({ description: 'Location ID of the practice court', nullable: true })
+  locationId: string | null;
+
+  @ApiProperty({ type: Object, nullable: true })
+  location?: LocationDetailsDto | null;
 
   @ApiProperty({ description: 'When the practice court was created' })
   createdAt: Date;

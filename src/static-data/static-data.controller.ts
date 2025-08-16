@@ -31,6 +31,7 @@ import { Roles } from '../auth/decorators/roles.decorator'; // Import Roles deco
 import { Role } from '@prisma/client'; // Import Role enum
 import { AddLawyerPracticeAreaDto } from './dto/add-lawyer-practice-area.dto'; // Import DTO
 import { AddLawyerPracticeCourtDto } from './dto/add-lawyer-practice-court.dto'; // Import DTO
+import { PracticeCourtDto } from 'src/profiles/dto/practice-court.dto'; 
 
 @ApiTags('static-data')
 @Controller('static-data')
@@ -63,7 +64,7 @@ export class StaticDataController {
   @ApiResponse({
     status: 200,
     description: 'List of practice courts.',
-    type: [Object],
+    type: [PracticeCourtDto],
   }) // Use Object for Swagger
   async findAllCourts(): Promise<PracticeCourt[]> {
     return this.staticDataService.findAllCourts();

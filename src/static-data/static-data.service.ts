@@ -24,7 +24,15 @@ export class StaticDataService {
    * @returns {Promise<PracticeCourt[]>} A list of all practice courts.
    */
   async findAllCourts(): Promise<PracticeCourt[]> {
-    return this.prisma.practiceCourt.findMany();
+    return this.prisma.practiceCourt.findMany({
+      include: {
+        location: {
+          include: {
+            city: true,
+          },
+        },
+      },
+    });
   }
 
   /**
