@@ -9,11 +9,11 @@ import { ScheduleModule } from '@nestjs/schedule'; // Import ScheduleModule
 import { ProfilesModule } from './profiles/profiles.module';
 import { StaticDataModule } from './static-data/static-data.module';
 import { LawyersModule } from './lawyers/lawyers.module';
-import { ClientModule } from './client/client.module';
+// import { ClientModule } from './client/client.module';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard } from '@nestjs/throttler';
-import { LawyerModule } from './lawyer/lawyer.module';
+// import { LawyerModule } from './lawyer/lawyer.module';
 import { UploadModule } from './upload/upload.module';
 // Remove APP_GUARD and RateLimiterGuard imports if no longer needed globally
 
