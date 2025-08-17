@@ -9,10 +9,54 @@ import {
   MaxLength,
   IsBoolean,
   IsArray,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { LawyerProfile } from '@prisma/client';
 import { PracticeCourtDto } from './practice-court.dto';
 import { PracticeAreaDto } from './practice-area.dto';
+import { CityDto, LocationDetailsDto } from 'src/common/dto/location-details.dto';
+
+// export class UpdateLocationDto {
+
+//   @ApiPropertyOptional({ description: 'Location ID' })
+//   @IsOptional()
+//   @IsUUID()
+//   locationId?: string;
+//   // Either ID or name must be present for cities, Handle validation in app logic
+//   @ApiPropertyOptional({ description: 'City ID' })
+//   // @IsOptional()
+//   @IsUUID()
+//   cityId: string;
+
+//   @ApiPropertyOptional({ description: 'City name' })
+//   @IsOptional()
+//   @IsString()
+//   cityName?: string;
+
+//   // @ApiPropertyOptional({ description: 'City', type: Object, nullable: true })
+//   // // @IsOptional()
+//   // @ValidateNested()
+//   // @Type(() => CityDto)
+//   // city: {
+//   //   id: string;
+//   //   name?: string;
+//   // };
+//   @ApiPropertyOptional({ description: 'Full address' })
+//   @IsOptional()
+//   @IsString()
+//   address?: string;
+
+//   @ApiPropertyOptional({ description: 'Latitude' })
+//   @IsOptional()
+//   @IsInt()
+//   latitude?: number;
+
+//   @ApiPropertyOptional({ description: 'Longitude' })
+//   @IsOptional()
+//   @IsInt()
+//   longitude?: number;
+// }
 
 /**
  * DTO for updating a lawyer's profile.
@@ -36,15 +80,6 @@ export class UpdateLawyerProfileDto implements Partial<LawyerProfile> {
   @IsOptional()
   @IsString()
   photo?: string | null;
-
-  @ApiPropertyOptional({
-    description: "Lawyer's location",
-    maxLength: 255,
-  })
-  @IsOptional()
-  @IsString()
-  @MaxLength(255)
-  location?: string | null;
 
   @ApiPropertyOptional({
     description: 'Years of professional experience',
@@ -112,15 +147,39 @@ export class UpdateLawyerProfileDto implements Partial<LawyerProfile> {
   @IsString()
   primaryCourt?: string;
 
+  @ApiPropertyOptional({ type: () => LocationDetailsDto })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => LocationDetailsDto)
+  location?: LocationDetailsDto | undefined;
+
+
+  @ApiPropertyOptional({
+    description: 'Primary location ID',
+  })
+  @IsOptional()
+  @IsString()
+  locationId?: string;
+
   // Review
   @ApiPropertyOptional({
-    description: 'Practice Courts',
+    description: 'Practice Courts: IF you want to update location of practice courts: either locationId or cityId must be present.',
     type: 'array',
     items: {
       type: 'object',
     properties: {
       name: { type: 'string' },
-      location: { type: 'string',  nullable: true },
+      locationId: { type: 'string', nullable: true },
+      location: { type: 'object', nullable: true, properties: {
+        id: { type: 'string', nullable: true },
+        address: { type: 'string', nullable: true },
+        latitude: { type: 'number', nullable: true },
+        longitude: { type: 'number', nullable: true },
+        city: { type: 'object', properties: {
+          id: { type: 'string', nullable: true },
+          name: { type: 'string', nullable: true },
+        }},
+      }},
      
     },
 }})
