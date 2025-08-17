@@ -70,7 +70,7 @@ model LawyerProfile {
   id    String  @id @default(uuid())
   name  String? // Optional name field
   photo String?
-
+// Location Relation(one-to-one)
   locationId String?
   location   Location? @relation(fields: [locationId], references: [id], onDelete: Restrict)
 
@@ -114,6 +114,7 @@ model LawyerProfile {
   // Received Requests (One-to-Many)
   receivedRequests ConsultationRequest[] @relation("LawyerRequests")
 
+// @@unique([userId, locationId]) // Ensure one-to-one relationship with User
    // For query performance optimisation
   @@index([name])
   @@index([id])
@@ -285,7 +286,7 @@ model Location {
   // Ensure either city or area is specified
   // You'll need to handle this validation in your application logic
   
-  // Related entities
+  // Related entities, many-to-one relationships with lawyerProfile & practiceCourt
   lawyerProfiles LawyerProfile[]
   practiceCourts PracticeCourt[]
 

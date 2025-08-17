@@ -1,10 +1,12 @@
 # Plan: Location Schema Update
 
 This plan outlines the necessary changes to align the Advonex backend with the new, structured location schema. The previous `location` string field has been replaced by a relational model including `Country`, `State`, `City`, and `Location` entities.
+first, Create a new common util location-details.dto file which match the prisma schema structure properly.
+second,
 
 ## 1. DTO Updates
 
-The following Data Transfer Objects (DTOs) need to be updated to remove the deprecated `location` string and, where appropriate, include the new relational location data.
+The following Data Transfer Objects (DTOs) need to be updated to remove the deprecated `location` string(if present) and, where appropriate,  Refer to the newly created location-details.dto file in location fields.
 
 - **`c:\Users\alexr\Desktop\aified\advonex-backend\src\client\dto\consultation-request-response.dto.ts`**
   - [ ] Remove `location: string | null;` from the `lawyer` object.

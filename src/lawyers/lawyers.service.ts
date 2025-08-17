@@ -51,44 +51,44 @@ export class LawyersService {
       AND: [
         searchTerm
           ? {
-              OR: [
-                { name: { contains: searchTerm, mode: 'insensitive' } },
-                { bio: { contains: searchTerm, mode: 'insensitive' } },
-              ],
-            }
+            OR: [
+              { name: { contains: searchTerm, mode: 'insensitive' } },
+              { bio: { contains: searchTerm, mode: 'insensitive' } },
+            ],
+          }
           : {},
         practiceArea
           ? {
-              practiceAreas: {
-                some: {
-                  practiceArea: {
-                    name: { equals: practiceArea, mode: 'insensitive' },
-                  },
+            practiceAreas: {
+              some: {
+                practiceArea: {
+                  name: { equals: practiceArea, mode: 'insensitive' },
                 },
               },
-            }
+            },
+          }
           : {},
         court
           ? {
-              practiceCourts: {
-                some: {
-                  practiceCourt: {
-                    name: { equals: court, mode: 'insensitive' },
-                  },
+            practiceCourts: {
+              some: {
+                practiceCourt: {
+                  name: { equals: court, mode: 'insensitive' },
                 },
               },
-            }
+            },
+          }
           : {},
         service
           ? {
-              services: {
-                some: {
-                  service: {
-                    name: { equals: service, mode: 'insensitive' },
-                  },
+            services: {
+              some: {
+                service: {
+                  name: { equals: service, mode: 'insensitive' },
                 },
               },
-            }
+            },
+          }
           : {},
         minHourlyRate ? { consultFee: { gte: minHourlyRate } } : {},
         maxHourlyRate ? { consultFee: { lte: maxHourlyRate } } : {},
@@ -127,6 +127,19 @@ export class LawyersService {
         specialization: true,
         primaryCourt: true,
         education: true,
+        location: {
+          include: {
+            city: {
+              include: {
+                state: {
+                  include: {
+                    country: true,
+                  },
+                },
+              },
+            },
+          },
+        },
       },
       orderBy: {
         createdAt: 'desc',
@@ -182,6 +195,19 @@ export class LawyersService {
           specialization: true,
           primaryCourt: true,
           education: true,
+          location: {
+            include: {
+              city: {
+                include: {
+                  state: {
+                    include: {
+                      country: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
         },
       });
 
@@ -218,6 +244,24 @@ export class LawyersService {
   private mapToDto(
     profile: LawyerProfile & {
       user: { email: string | null };
+      location: {
+        id: string;
+        address: string | null;
+        latitude: number | null;
+        longitude: number | null;
+        city: {
+          id: string;
+          name: string;
+          state: {
+            id: string;
+            name: string;
+            country: {
+              id: string;
+              name: string;
+            };
+          };
+        };
+      } | null;
       practiceAreas: Array<{ practiceArea: PracticeArea }>;
       practiceCourts: Array<{ practiceCourt: PracticeCourt }>;
       services: Array<{ service: Service }>;
@@ -231,7 +275,26 @@ export class LawyersService {
       name: profile.name,
       email: profile.user.email,
       photo: profile.photo,
-      location: profile.location,
+      location: profile.location
+        ? {
+          id: profile.location.id,
+          address: profile.location.address,
+          latitude: profile.location.latitude,
+          longitude: profile.location.longitude,
+          city: {
+            id: profile.location.city.id,
+            name: profile.location.city.name,
+            state: {
+              id: profile.location.city.state.id,
+              name: profile.location.city.state.name,
+              country: {
+                id: profile.location.city.state.country.id,
+                name: profile.location.city.state.country.name,
+              },
+            },
+          }
+        }
+        : null,
       experience: profile.experience,
       bio: profile.bio,
       consultFee: profile.consultFee,
