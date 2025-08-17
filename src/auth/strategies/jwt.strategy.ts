@@ -10,12 +10,13 @@ export interface JwtPayload {
   sub: string; // User ID
   phoneNumber?: string; // Optional for email-based users
   email?: string; // Optional for phone-based users
-  roles: Role[]; // Array of roles
+  roles: Role[]; // Array of roles; NOTE: Only contains the active role
   profileId: string; // ID of the active profile (Client or Lawyer)
   profileIds?: {
     clientId?: string;
     lawyerId?: string;
-  }; // ID of the active profile (Client or Lawyer)
+  };
+  lawyerRegistrationPending?: boolean | undefined; // Indicates if registration is pending
   // status?: AccountStatus; // Optional: Include if needed for checks
 }
 

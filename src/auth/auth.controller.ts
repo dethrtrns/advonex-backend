@@ -44,7 +44,8 @@ import {
   UnifiedOtpRequestDto,
   UnifiedOtpVerifyDto,
 } from './dto/email-otp.dto';
-// TODO:
+
+// TODO: Review and delete the following comments.
 // 1. in testing i see when i update the specialization of a lawyer via this Put request(jest sending this: {"specialization": "Technology Law"} ), then it sets the specialization successfully but nullifies the primaryCourt field, and vice versa. First find out and explain why this is happening then propose a fix and apply only after i confirm. DO NOT TRY To FIX Without finding the origin of the issue.
 // 2. For practiceAreas, practiceCourts, and services (many-to-many relations), i want a similar behaviour: the frontend(or api user) if(optionally) sends the body with the field name and values as an array of object/s(each object representing data-a row of the respective table) with field and value pairs as as per the schema, and we check each value of the array for existing data in respective table and link them accordingly and for values not found in existing-we create the data and then link it properly with the profile. For example- frontend sends this request body-{"practiceAreas": [{"name":"Civil Law"}, {"name":"Family Law"}]}, so we first check if these(all values) already exist(related to) on the profile and send appropriate response, else we check if the requested practiceAreas exist in PracticeArea table, let's say we find that "Civil Law" exists but "Family Law" doesn't, so we first create the data for not existing value e.i. "Family Law", then we link the lawyer's profile to these(all requested practiceAreas in the Array) requested relations.
 // For:
@@ -208,6 +209,7 @@ export class AuthController {
     const data = await this.authService.requestEmailOtp(dto);
     return { success: data };
   }
+
 
   @Post('verify-otp-email')
   @ApiOperation({

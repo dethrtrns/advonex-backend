@@ -179,295 +179,300 @@ export class AuthService {
     }
   }
 
-  async requestOtp(requestOtpDto: RequestOtpDto): Promise<PhoneOtp> {
-    const { phoneNumber, role } = requestOtpDto;
-    this.logger.log(`OTP requested for phone: ${phoneNumber}, role: ${role}`);
+  // async requestOtp(requestOtpDto: RequestOtpDto): Promise<PhoneOtp> {
+  //   const { phoneNumber, role } = requestOtpDto;
+  //   this.logger.log(`OTP requested for phone: ${phoneNumber}, role: ${role}`);
 
-    // Check rate limit for phone number
-    this.checkRateLimit(phoneNumber);
+  //   // Check rate limit for phone number
+  //   this.checkRateLimit(phoneNumber);
 
-    const existingUserWithRoles = await this.prisma.user.findUnique({
-      where: { phoneNumber },
-      include: {
-        userRoles: {
-          select: { role: true, isActive: true },
-        },
-      },
-    });
+  //   const existingUserWithRoles = await this.prisma.user.findUnique({
+  //     where: { phoneNumber },
+  //     include: {
+  //       userRoles: {
+  //         select: { role: true, isActive: true },
+  //       },
+  //     },
+  //   });
 
-    if (existingUserWithRoles) {
-      const conflictingActiveRole = existingUserWithRoles.userRoles.find(
-        (userRole) => userRole.isActive && userRole.role !== role,
-      );
-      if (conflictingActiveRole) {
-        this.logger.warn(
-          `Role conflict for phone number: ${phoneNumber}. User has active role: ${conflictingActiveRole.role}, Requested: ${role}`,
-        );
-        throw new ConflictException(
-          `Phone number already registered with a different active role (${conflictingActiveRole.role}).`,
-        );
-      }
-    }
+  //   if (existingUserWithRoles) {
+  //     const conflictingActiveRole = existingUserWithRoles.userRoles.find(
+  //       (userRole) => userRole.isActive && userRole.role !== role,
+  //     );
+  //     if (conflictingActiveRole) {
+  //       this.logger.warn(
+  //         `Role conflict for phone number: ${phoneNumber}. User has active role: ${conflictingActiveRole.role}, Requested: ${role}`,
+  //       );
+  //       throw new ConflictException(
+  //         `Phone number already registered with a different active role (${conflictingActiveRole.role}).`,
+  //       );
+  //     }
+  //   }
 
-    const otpCode = this.generateOtp();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+  //   const otpCode = this.generateOtp();
+  //   const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-    try {
-      await this.prisma.phoneOtp.deleteMany({
-        where: { phoneNumber: phoneNumber },
-      });
-      this.logger.log(`Deleted existing OTPs for phone: ${phoneNumber}`);
+  //   try {
+  //     await this.prisma.phoneOtp.deleteMany({
+  //       where: { phoneNumber: phoneNumber },
+  //     });
+  //     this.logger.log(`Deleted existing OTPs for phone: ${phoneNumber}`);
 
-      const otpRecord = await this.prisma.phoneOtp.create({
-        data: {
-          phoneNumber: phoneNumber,
-          otp: otpCode,
-          expiresAt: expiresAt,
-          role: role,
-        },
-      });
+  //     const otpRecord = await this.prisma.phoneOtp.create({
+  //       data: {
+  //         phoneNumber: phoneNumber,
+  //         otp: otpCode,
+  //         expiresAt: expiresAt,
+  //         role: role,
+  //       },
+  //     });
 
-      try {
-        await this.smsService.sendOtp(phoneNumber, otpCode);
-        this.logger.log(
-          `OTP sent (via ${this.smsService.constructor.name}) to ${phoneNumber}. Expires at ${expiresAt}.`,
-        );
-      } catch (smsError) {
-        this.logger.error(
-          `Failed to send OTP via ${this.smsService.constructor.name} to ${phoneNumber}: ${smsError.message}`,
-          smsError.stack,
-        );
-      }
+  //     try {
+  //       await this.smsService.sendOtp(phoneNumber, otpCode);
+  //       this.logger.log(
+  //         `OTP sent (via ${this.smsService.constructor.name}) to ${phoneNumber}. Expires at ${expiresAt}.`,
+  //       );
+  //     } catch (smsError) {
+  //       this.logger.error(
+  //         `Failed to send OTP via ${this.smsService.constructor.name} to ${phoneNumber}: ${smsError.message}`,
+  //         smsError.stack,
+  //       );
+  //     }
 
-      return otpRecord;
-    } catch (error) {
-      this.logger.error(
-        `Failed to store/send OTP for ${phoneNumber}: ${error.message}`,
-        error.stack,
-      );
-      if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        throw new InternalServerErrorException(
-          `Database error during OTP creation/cleanup. Code: ${error.code}`,
-        );
-      }
-      throw new InternalServerErrorException('Failed to process OTP request.');
-    }
-  }
+  //     return otpRecord;
+  //   } catch (error) {
+  //     this.logger.error(
+  //       `Failed to store/send OTP for ${phoneNumber}: ${error.message}`,
+  //       error.stack,
+  //     );
+  //     if (error instanceof Prisma.PrismaClientKnownRequestError) {
+  //       throw new InternalServerErrorException(
+  //         `Database error during OTP creation/cleanup. Code: ${error.code}`,
+  //       );
+  //     }
+  //     throw new InternalServerErrorException('Failed to process OTP request.');
+  //   }
+  // }
 
-  private async createProfileForNewUser(
-    userId: string,
-    role: Role,
-  ): Promise<ClientProfile | LawyerProfile> {
-    this.logger.log(
-      `Creating profile for new user ${userId} with role ${role}`,
-    );
-    if (role === Role.CLIENT) {
-      return this.prisma.clientProfile.create({
-        data: { userId },
-      });
-    } else if (role === Role.LAWYER) {
-      return this.prisma.lawyerProfile.create({
-        data: { userId },
-      });
-    } else {
-      this.logger.error(`Cannot create profile for unexpected role: ${role}`);
-      throw new InternalServerErrorException(
-        'Invalid role for profile creation.',
-      );
-    }
-  }
+  // private async createProfileForNewUser(
+  //   userId: string,
+  //   role: Role,
+  // ): Promise<ClientProfile | LawyerProfile> {
+  //   this.logger.log(
+  //     `Creating profile for new user ${userId} with role ${role}`,
+  //   );
+  //   if (role === Role.CLIENT) {
+  //     return this.prisma.clientProfile.create({
+  //       data: { userId },
+  //     });
+  //   } else if (role === Role.LAWYER) {
+  //     return this.prisma.lawyerProfile.create({
+  //       data: { userId },
+  //     });
+  //   } else {
+  //     this.logger.error(`Cannot create profile for unexpected role: ${role}`);
+  //     throw new InternalServerErrorException(
+  //       'Invalid role for profile creation.',
+  //     );
+  //   }
+  // }
 
-  async verifyOtp(verifyOtpDto: VerifyOtpDto): Promise<{
-    accessToken: string;
-    refreshToken: string;
-    user: {
-      id: string;
-      email: string | null;
-      phoneNumber: string | null;
-      roles: string[];
-      profileId: string;
-      isNewUser: boolean;
-    };
-  }> {
-    const { phoneNumber, otp } = verifyOtpDto;
-    this.logger.log(`OTP verification attempt for phone: ${phoneNumber}`);
+  // async verifyOtp(verifyOtpDto: VerifyOtpDto): Promise<{
+  //   accessToken: string;
+  //   refreshToken: string;
+  //   user: {
+  //     id: string;
+  //     email: string | null;
+  //     phoneNumber: string | null;
+  //     roles: string[];
+  //     profileId: string;
+  //     isNewUser: boolean;
+  //   };
+  // }> {
+  //   const { phoneNumber, otp } = verifyOtpDto;
+  //   this.logger.log(`OTP verification attempt for phone: ${phoneNumber}`);
 
-    // 1. Find the OTP record
-    const otpRecord = await this.prisma.phoneOtp.findFirst({
-      where: {
-        phoneNumber: phoneNumber,
-        otp: otp,
-        expiresAt: { gt: new Date() }, // Check if not expired
-      },
-    });
+  //   // 1. Find the OTP record
+  //   const otpRecord = await this.prisma.phoneOtp.findFirst({
+  //     where: {
+  //       phoneNumber: phoneNumber,
+  //       otp: otp,
+  //       expiresAt: { gt: new Date() }, // Check if not expired
+  //     },
+  //   });
 
-    if (!otpRecord) {
-      this.logger.warn(`Invalid or expired OTP for phone: ${phoneNumber}`);
-      // Optionally delete expired OTPs here or rely on the scheduled job
-      await this.prisma.phoneOtp.deleteMany({
-        where: { phoneNumber: phoneNumber, expiresAt: { lte: new Date() } },
-      });
-      throw new UnauthorizedException('Invalid or expired OTP.');
-    }
+  //   if (!otpRecord) {
+  //     this.logger.warn(`Invalid or expired OTP for phone: ${phoneNumber}`);
+  //     // Optionally delete expired OTPs here or rely on the scheduled job
+  //     await this.prisma.phoneOtp.deleteMany({
+  //       where: { phoneNumber: phoneNumber, expiresAt: { lte: new Date() } },
+  //     });
+  //     throw new UnauthorizedException('Invalid or expired OTP.');
+  //   }
 
-    // OTP is valid, proceed with login/registration
-    const requestedRole = otpRecord.role; // Get the role from the OTP record
+  //   // OTP is valid, proceed with login/registration
+  //   const requestedRole = otpRecord.role; // Get the role from the OTP record
 
-    let isNewUser = false;
+  //   let isNewUser = false;
 
-    try {
-      // Use transaction for atomicity
-      const result = await this.prisma.$transaction(async (tx) => {
-        // Find or create user
-        const existingUser = await tx.user.findUnique({
-          where: { phoneNumber: phoneNumber },
-          include: {
-            userRoles: true,
-            clientProfile: true,
-            lawyerProfile: true,
-          },
-        });
+  //   try {
+  //     // Use transaction for atomicity
+  //     const result = await this.prisma.$transaction(async (tx) => {
+  //       // Find or create user
+  //       const existingUser = await tx.user.findUnique({
+  //         where: { phoneNumber: phoneNumber },
+  //         include: {
+  //           userRoles: true,
+  //           clientProfile: true,
+  //           lawyerProfile: true,
+  //         },
+  //       });
 
-        let user = existingUser;
-        if (!user) {
-          isNewUser = true;
-          this.logger.log(`New user registration for phone: ${phoneNumber}`);
+  //       let user = existingUser;
+  //       if (!user) {
+  //         isNewUser = true;
+  //         this.logger.log(`New user registration for phone: ${phoneNumber}`);
 
-          // Create new user
-          user = await tx.user.create({
-            data: {
-              phoneNumber: phoneNumber,
-              accountStatus: AccountStatus.ACTIVE,
-            },
-            include: {
-              userRoles: true,
-              clientProfile: true,
-              lawyerProfile: true,
-            },
-          });
+  //         // Create new user
+  //         user = await tx.user.create({
+  //           data: {
+  //             phoneNumber: phoneNumber,
+  //             accountStatus: AccountStatus.ACTIVE,
+  //           },
+  //           include: {
+  //             userRoles: true,
+  //             clientProfile: true,
+  //             lawyerProfile: true,
+  //           },
+  //         });
 
-          // Create role based on request or default to CLIENT
-          const role = requestedRole || Role.CLIENT;
-          await tx.userRole.create({
-            data: {
-              userId: user.id,
-              role: role,
-              isActive: true,
-            },
-          });
+  //         // Create role based on request or default to CLIENT
+  //         const role = requestedRole || Role.CLIENT;
+  //         await tx.userRole.create({
+  //           data: {
+  //             userId: user.id,
+  //             role: role,
+  //             isActive: true,
+  //           },
+  //         });
 
-          // Create appropriate profile based on role
-          if (role === Role.CLIENT) {
-            await tx.clientProfile.create({
-              data: {
-                userId: user.id,
-                registrationPending: true,
-              },
-            });
-          } else if (role === Role.LAWYER) {
-            await tx.lawyerProfile.create({
-              data: {
-                userId: user.id,
-                registrationPending: true,
-              },
-            });
-          }
-        } else {
-          this.logger.log(`Existing user login for phone: ${phoneNumber}`);
-          // If role is provided, check if user has it
-          if (requestedRole) {
-            const hasRequestedRole = user.userRoles.some(
-              (ur) => ur.role === requestedRole && ur.isActive,
-            );
-            if (!hasRequestedRole) {
-              throw new UnauthorizedException(
-                'User does not have the requested role',
-              );
-            }
-          }
-          // Update last login time for existing user
-          await tx.user.update({
-            where: { id: user.id },
-            data: { lastLogin: new Date() },
-          });
-        }
+  //         // Create appropriate profile based on role
+  //         if (role === Role.CLIENT) {
+  //           await tx.clientProfile.create({
+  //             data: {
+  //               userId: user.id,
+  //               registrationPending: true,
+  //             },
+  //           });
+  //         } else if (role === Role.LAWYER) {
+  //           await tx.lawyerProfile.create({
+  //             data: {
+  //               userId: user.id,
+  //               registrationPending: true,
+  //             },
+  //           });
+  //         }
+  //       } else {
+  //         this.logger.log(`Existing user login for phone: ${phoneNumber}`);
+  //         // If role is provided, check if user has it
+  //         if (requestedRole) {
+  //           const hasRequestedRole = user.userRoles.some(
+  //             (ur) => ur.role === requestedRole && ur.isActive,
+  //           );
+  //           if (!hasRequestedRole) {
+  //             throw new UnauthorizedException(
+  //               'User does not have the requested role',
+  //             );
+  //           }
+  //         }
+  //         // Update last login time for existing user
+  //         await tx.user.update({
+  //           where: { id: user.id },
+  //           data: { lastLogin: new Date() },
+  //         });
+  //       }
 
-        // Fetch the final user state with updated roles
-        const finalUser = await tx.user.findUniqueOrThrow({
-          where: { id: user.id },
-          include: {
-            userRoles: { where: { isActive: true } },
-            clientProfile: true,
-            lawyerProfile: true,
-          },
-        });
+  //       // Fetch the final user state with updated roles
+  //       const finalUser = await tx.user.findUniqueOrThrow({
+  //         where: { id: user.id },
+  //         include: {
+  //           userRoles: { where: { isActive: true } },
+  //           clientProfile: true,
+  //           lawyerProfile: true,
+  //         },
+  //       });
 
-        return { user: finalUser };
-      });
+  //       return { user: finalUser };
+  //     });
 
-      const { user: finalUser } = result;
+  //     const { user: finalUser } = result;
 
-      // Create JWT payload
-      const activeRoles = finalUser.userRoles.map((ur) => ur.role);
-      const profileId =
-        finalUser.clientProfile?.id || finalUser.lawyerProfile?.id || '';
+  //     // Create JWT payload
+  //     const activeRoles = finalUser.userRoles.map((ur) => ur.role);
+  //     const profileId =
+  //       finalUser.clientProfile?.id || finalUser.lawyerProfile?.id || '';
 
-      const payload: JwtPayload = {
-        sub: finalUser.id,
-        phoneNumber: finalUser.phoneNumber || undefined,
-        roles: activeRoles,
-        profileId,
-      };
+  //     const payload: JwtPayload = {
+  //       sub: finalUser.id,
+  //       phoneNumber: finalUser.phoneNumber || undefined,
+  //       roles: activeRoles,
+  //       profileId,
+  //       profileIds: {
+  //         clientId: finalUser.clientProfile?.id || undefined,
+  //         lawyerId: finalUser.lawyerProfile?.id || undefined,
+  //       },
+  //       lawyerRegistrationPending: finalUser.lawyerProfile?.registrationPending || undefined,
+  //     };
 
-      // Generate tokens
-      const tokens = await this.generateTokens(payload);
+  //     // Generate tokens
+  //     const tokens = await this.generateTokens(payload);
 
-      // Store refresh token
-      const hashedRefreshToken = await this.hashRefreshToken(
-        tokens.refreshToken,
-      );
-      const refreshTokenExpiry = this.calculateRefreshTokenExpiry();
+  //     // Store refresh token
+  //     const hashedRefreshToken = await this.hashRefreshToken(
+  //       tokens.refreshToken,
+  //     );
+  //     const refreshTokenExpiry = this.calculateRefreshTokenExpiry();
 
-      await this.prisma.refreshToken.create({
-        data: {
-          hashedToken: hashedRefreshToken,
-          userId: finalUser.id,
-          expiresAt: refreshTokenExpiry,
-        },
-      });
+  //     await this.prisma.refreshToken.create({
+  //       data: {
+  //         hashedToken: hashedRefreshToken,
+  //         userId: finalUser.id,
+  //         expiresAt: refreshTokenExpiry,
+  //       },
+  //     });
 
-      this.logger.log(
-        `User ${finalUser.id} successfully verified/logged in with roles: ${activeRoles.join(', ')}`,
-      );
+  //     this.logger.log(
+  //       `User ${finalUser.id} successfully verified/logged in with roles: ${activeRoles.join(', ')}`,
+  //     );
 
-      return {
-        ...tokens,
-        user: {
-          id: finalUser.id,
-          email: finalUser.email,
-          phoneNumber: finalUser.phoneNumber,
-          roles: activeRoles,
-          profileId,
-          isNewUser,
-        },
-      };
-    } catch (error) {
-      this.logger.error(
-        `Error during OTP verification/user processing for ${phoneNumber}: ${error.message}`,
-        error.stack,
-      );
-      // Handle potential Prisma transaction errors or other exceptions
-      if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        // Handle specific Prisma errors if necessary
-        throw new InternalServerErrorException(
-          'Database error during verification.',
-        );
-      }
-      throw new InternalServerErrorException(
-        'An error occurred during the verification process.',
-      );
-    }
-  }
+  //     return {
+  //       ...tokens,
+  //       user: {
+  //         id: finalUser.id,
+  //         email: finalUser.email,
+  //         phoneNumber: finalUser.phoneNumber,
+  //         roles: activeRoles,
+  //         profileId,
+  //         isNewUser,
+  //       },
+  //     };
+  //   } catch (error) {
+  //     this.logger.error(
+  //       `Error during OTP verification/user processing for ${phoneNumber}: ${error.message}`,
+  //       error.stack,
+  //     );
+  //     // Handle potential Prisma transaction errors or other exceptions
+  //     if (error instanceof Prisma.PrismaClientKnownRequestError) {
+  //       // Handle specific Prisma errors if necessary
+  //       throw new InternalServerErrorException(
+  //         'Database error during verification.',
+  //       );
+  //     }
+  //     throw new InternalServerErrorException(
+  //       'An error occurred during the verification process.',
+  //     );
+  //   }
+  // }
 
   /**
    * Refreshes the access and refresh tokens using a valid refresh token.
@@ -484,6 +489,7 @@ export class AuthService {
     this.logger.log('Received refresh token request');
     const incomingRefreshToken = refreshTokenDto.refreshToken;
 
+  
     try {
       // 1. Verify the JWT signature and extract payload (without checking expiry yet)
       const payload = this.jwtService.verify(incomingRefreshToken, {
@@ -553,7 +559,7 @@ export class AuthService {
         include: {
           userRoles: { where: { isActive: true }, select: { role: true } },
           clientProfile: { select: { id: true } }, // Select only needed fields
-          lawyerProfile: { select: { id: true } }, // Select only needed fields
+          lawyerProfile: { select: { id: true, registrationPending: true } }, // Select only needed fields
         },
       });
 
@@ -582,6 +588,7 @@ export class AuthService {
           clientId: user.clientProfile?.id,
           lawyerId: user.lawyerProfile?.id,
         },
+        lawyerRegistrationPending: user.lawyerProfile?.registrationPending || undefined,
       };
       const newTokens = await this.generateTokens(newAccessTokenPayload);
 
@@ -604,16 +611,7 @@ export class AuthService {
       // console.log('test bcrypt Match', testMatch); // should be false but returns true
       // test end
 
-      // Test2 independant argon test
-      const token1 =
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3MTE0YWMzYy1iZTY5LTQ1NzUtOGY0Ni00ZmEzMzIxOTdjODAiLCJpYXQiOjE3NDg3Njc4NzYsImV4cCI6MTc1MTM1OTg3Nn0.S81FlZC59_4uTuhdLcSFLKD8pUGGiLySKiSDnYDOhqY'; // simulate incoming
-      const token2 =
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3MTE0YWMzYy1iZTY5LTQ1NzUtOGY0Ni00ZmEzMzIxOTdjODAiLCJpYXQiOjE3NDg3NzI3ODgsImV4cCI6MTc1MTM2NDc4OH0.ajeeIHE72siwAHTrp_NriEgbujj9DQp_4pWqgBsSBS0'; // simulate new
-      const hash2 = await argon2.hash(token2);
-      const match = await argon2.verify( hash2,token1);
-      // console.log('token1 === token2?', token1 === token2); // false
-      console.log('match:', match); 
-      // test end
+      
 
       const newRefreshTokenExpiry = this.calculateRefreshTokenExpiry();
 
@@ -726,7 +724,7 @@ export class AuthService {
       include: {
         userRoles: true, // Include all roles to check existing ones
         clientProfile: { select: { id: true } },
-        lawyerProfile: { select: { id: true } },
+        lawyerProfile: { select: { id: true, registrationPending: true } },
       },
     });
 
@@ -801,10 +799,12 @@ export class AuthService {
 
       // 3. Ensure profile exists for the newly active role
       let currentProfileId: string | undefined;
+      
       if (addRoleDto.role === Role.CLIENT) {
         if (!user.clientProfile) {
           const newClientProfile = await tx.clientProfile.create({
-            data: { userId, registrationPending: true }, // Set registrationPending for new profiles
+            data: { userId, registrationPending: true },
+            select: { id: true, registrationPending: true },// Set registrationPending for new profiles
           });
           currentProfileId = newClientProfile.id;
           this.logger.log(`Created ClientProfile for user ${userId}`);
@@ -814,7 +814,8 @@ export class AuthService {
       } else if (addRoleDto.role === Role.LAWYER) {
         if (!user.lawyerProfile) {
           const newLawyerProfile = await tx.lawyerProfile.create({
-            data: { userId, registrationPending: true }, // Set registrationPending for new profiles
+            data: { userId, registrationPending: true },
+            select: { id: true, registrationPending: true }, // Set registrationPending for new profiles
           });
           currentProfileId = newLawyerProfile.id;
           this.logger.log(`Created LawyerProfile for user ${userId}`);
@@ -837,6 +838,11 @@ export class AuthService {
         sub: userId,
         roles: [addRoleDto.role], // Only the newly active role
         profileId: currentProfileId,
+        profileIds: {
+          clientId: user.clientProfile?.id || undefined,
+          lawyerId: user.lawyerProfile?.id || undefined,
+        },
+        lawyerRegistrationPending: user?.lawyerProfile?.registrationPending || undefined,
         email: user.email || undefined,
         phoneNumber: user.phoneNumber || undefined,
       };
@@ -1040,6 +1046,11 @@ export class AuthService {
       phoneNumber: string | null;
       roles: string[];
       profileId: string;
+      lawyerRegistrationPending: boolean | undefined;
+      profileIds: {
+        clientId: string | undefined;
+        lawyerId: string | undefined;
+      };
       isNewUser: boolean;
     };
   }> {
@@ -1214,6 +1225,7 @@ export class AuthService {
         roles: activeRoles,
         profileId,
         profileIds,
+        lawyerRegistrationPending: finalUser.lawyerProfile?.registrationPending || undefined,
       };
 
       // Generate tokens
@@ -1246,6 +1258,8 @@ export class AuthService {
           roles: activeRoles,
           profileId,
           isNewUser,
+          profileIds,
+          lawyerRegistrationPending: finalUser.lawyerProfile?.registrationPending || undefined,
         },
       };
     } catch (error) {
@@ -1260,51 +1274,51 @@ export class AuthService {
     }
   }
 
-  /**
-   * Unified OTP request handler for both email and phone
-   * @param dto UnifiedOtpRequestDto containing either email or phoneNumber
-   * @returns Promise<boolean> Whether the OTP was sent successfully
-   */
-  async requestUnifiedOtp(dto: UnifiedOtpRequestDto): Promise<boolean> {
-    if (dto.email) {
-      return this.requestEmailOtp({ email: dto.email });
-    } else if (dto.phoneNumber) {
-      const result = await this.requestOtp({
-        phoneNumber: dto.phoneNumber,
-        role: Role.CLIENT,
-      });
-      return !!result; // Convert Otp object to boolean
-    }
-    throw new UnauthorizedException(
-      'Either email or phoneNumber must be provided',
-    );
-  }
+  // /**
+  //  * Unified OTP request handler for both email and phone
+  //  * @param dto UnifiedOtpRequestDto containing either email or phoneNumber
+  //  * @returns Promise<boolean> Whether the OTP was sent successfully
+  //  */
+  // async requestUnifiedOtp(dto: UnifiedOtpRequestDto): Promise<boolean> {
+  //   if (dto.email) {
+  //     return this.requestEmailOtp({ email: dto.email });
+  //   } else if (dto.phoneNumber) {
+  //     const result = await this.requestOtp({
+  //       phoneNumber: dto.phoneNumber,
+  //       role: Role.CLIENT,
+  //     });
+  //     return !!result; // Convert Otp object to boolean
+  //   }
+  //   throw new UnauthorizedException(
+  //     'Either email or phoneNumber must be provided',
+  //   );
+  // }
 
-  async verifyUnifiedOtp(dto: UnifiedOtpVerifyDto): Promise<{
-    accessToken: string;
-    refreshToken: string;
-    user: {
-      id: string;
-      email: string | null;
-      phoneNumber: string | null;
-      roles: string[];
-      profileId: string;
-      isNewUser: boolean;
-    };
-  }> {
-    if (dto.email) {
-      return this.verifyEmailOtp({
-        email: dto.email,
-        otp: dto.otp,
-        role: dto.role,
-      });
-    } else if (dto.phoneNumber) {
-      return this.verifyOtp({ phoneNumber: dto.phoneNumber, otp: dto.otp });
-    }
-    throw new UnauthorizedException(
-      'Either email or phoneNumber must be provided',
-    );
-  }
+  // async verifyUnifiedOtp(dto: UnifiedOtpVerifyDto): Promise<{
+  //   accessToken: string;
+  //   refreshToken: string;
+  //   user: {
+  //     id: string;
+  //     email: string | null;
+  //     phoneNumber: string | null;
+  //     roles: string[];
+  //     profileId: string;
+  //     isNewUser: boolean;
+  //   };
+  // }> {
+  //   if (dto.email) {
+  //     return this.verifyEmailOtp({
+  //       email: dto.email,
+  //       otp: dto.otp,
+  //       role: dto.role,
+  //     });
+  //   } else if (dto.phoneNumber) {
+  //     return this.verifyOtp({ phoneNumber: dto.phoneNumber, otp: dto.otp });
+  //   }
+  //   throw new UnauthorizedException(
+  //     'Either email or phoneNumber must be provided',
+  //   );
+  // }
 
   async getUserById(userId: string) {
     const user = await this.prisma.user.findUnique({
