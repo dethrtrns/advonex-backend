@@ -32,6 +32,8 @@ import { Role } from '@prisma/client'; // Import Role enum
 import { AddLawyerPracticeAreaDto } from './dto/add-lawyer-practice-area.dto'; // Import DTO
 import { AddLawyerPracticeCourtDto } from './dto/add-lawyer-practice-court.dto'; // Import DTO
 import { PracticeCourtDto } from 'src/profiles/dto/practice-court.dto'; 
+import { CityDto, StateDto } from 'src/common/dto/location-details.dto';
+import { PracticeAreaDto } from 'src/profiles/dto/practice-area.dto';
 
 @ApiTags('static-data')
 @Controller('static-data')
@@ -48,10 +50,43 @@ export class StaticDataController {
   @ApiResponse({
     status: 200,
     description: 'List of practice areas.',
-    type: [Object],
-  }) // Use Object for Swagger
+    type: [PracticeAreaDto], // Use PracticeAreaDto for Swagger
+  }) 
   async findAllPracticeAreas(): Promise<PracticeArea[]> {
     return this.staticDataService.findAllPracticeAreas();
+  }
+
+  /**
+   * Retrieves a list of all cities by state ID.
+   * @param {string} stateId - The UUID of the state to get cities for
+   * Publicly accessible.
+   * @returns {Promise<CityDto[]>} A list of cities.
+   */
+  @Get('cities-by-state/:stateId')
+  @ApiOperation({ summary: 'Get cities by state ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of cities in the specified state.',
+    type: [CityDto],
+  }) // Use CityDto for Swagger
+  async findCitiesByState(@Param('stateId') stateId: string): Promise<CityDto[]> {
+    return this.staticDataService.findCitiesByState(stateId);
+  }
+
+/**
+   * Retrieves a list of all available states.
+   * Publicly accessible.
+   * @returns {Promise<StateDto[]>} A list of states.
+   */
+  @Get('states')
+  @ApiOperation({ summary: 'Get all states' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of states.',
+    type: [StateDto],
+  }) // Use StateDto for Swagger
+  async findAllStates(): Promise<StateDto[]> {
+    return this.staticDataService.findAllStates();
   }
 
   /**

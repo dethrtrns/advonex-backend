@@ -6,6 +6,7 @@ import {
   LawyerPracticeArea,
   LawyerPracticeCourt,
 } from '@prisma/client';
+import { CityDto, StateDto } from 'src/common/dto/location-details.dto';
 
 @Injectable()
 export class StaticDataService {
@@ -34,7 +35,53 @@ export class StaticDataService {
       },
     });
   }
+  /**
+   * Retrieves a list of cities by state ID.
+   * @param {string} stateId - The UUID of the state to get cities for
+   * @returns {Promise<CityDto[]>} A list of cities.
+   */
 
+  async findCitiesByState(stateId: string): Promise<CityDto[]> {
+    const state = await this.prisma.state.findUnique({
+      where: { id: stateId },
+      select: { id: true, name: true },
+    });
+    if (!state) {
+      throw new NotFoundException(`State with ID ${stateId} not found`);
+    }
+    return this.prisma.city.findMany({
+      where: { stateId: state.id },
+      select: {
+        id: true,
+        name: true,
+        state: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+      orderBy: {
+        name: 'asc',
+      },
+    })
+  }
+/**
+   * Retrieves a list of all available states.
+   * Publicly accessible.
+   * @returns {Promise<StateDto[]>} A list of states.
+   */
+
+  async findAllStates(): Promise<StateDto[]> { 
+    return this.prisma.state.findMany({
+      include: {
+        country: true,
+      },
+      orderBy: {
+        name: 'asc',
+      },
+    });
+  }
   /**
    * Associates a practice area with a lawyer's profile.
    * @param {string} lawyerProfileId - The ID of the lawyer's profile.

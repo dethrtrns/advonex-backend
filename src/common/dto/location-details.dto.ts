@@ -29,9 +29,10 @@ export class StateDto {
   name: string;
 
   @ApiProperty({ type: () => CountryDto })
-    @ValidateNested()
+  @ValidateNested()
+  @IsOptional()
   @Type(() => CountryDto)
-  country: CountryDto;
+  country?: CountryDto;
 }
 
 export class CityDto {
