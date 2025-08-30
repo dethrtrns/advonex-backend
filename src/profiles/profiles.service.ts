@@ -15,6 +15,7 @@ import { equals } from 'class-validator';
 import { practiceCourts } from 'src/data/seedData';
 import { CityDto, LocationDetailsDto } from 'src/common/dto/location-details.dto';
 import { connect } from 'http2';
+import { PracticeAreaDto } from './dto/practice-area.dto';
 
 @Injectable()
 export class ProfilesService {
@@ -209,88 +210,88 @@ export class ProfilesService {
       const updatedProfile = await this.prisma.$transaction(async (prisma) => {
         // Handle specialization
         let specializationId: string | null = null;
-        if (updateLawyerProfileDto.specialization) {
+        if (updateLawyerProfileDto?.specialization?.name && !updateLawyerProfileDto.specialization?.id) {
           const specialization = await this.findOrCreatePracticeArea(
-            updateLawyerProfileDto.specialization,
+            updateLawyerProfileDto.specialization.name,
           );
           specializationId = specialization.id;
         }
-        let locationData: LocationDetailsDto | null = null;
+        let locationData: LocationDetailsDto | undefined = undefined;
         try {
-        // Handle location: frontend must send both ID and city ID
-        if (updateLawyerProfileDto.location?.id) {
-          locationData = await this.prisma.location.update({
-            where: { id: updateLawyerProfileDto.location.id },
-            data: {
-              address: updateLawyerProfileDto.location.address || undefined,
-              latitude: updateLawyerProfileDto.location.latitude || undefined,
-              longitude: updateLawyerProfileDto.location.longitude || undefined,
-              locationOf:'LAWYER',
-              // cityId: updateLawyerProfileDto.location.city.id,
-              city: {
-                connect: { id: updateLawyerProfileDto.location?.city?.id || undefined },
+          // Handle location: frontend must send both ID and city ID
+          if (updateLawyerProfileDto.location?.id) {
+            locationData = await this.prisma.location.update({
+              where: { id: updateLawyerProfileDto.location.id },
+              data: {
+                address: updateLawyerProfileDto.location.address || undefined,
+                latitude: updateLawyerProfileDto.location.latitude || undefined,
+                longitude: updateLawyerProfileDto.location.longitude || undefined,
+                locationOf: 'LAWYER',
+                // cityId: updateLawyerProfileDto.location.city.id,
+                city: {
+                  connect: { id: updateLawyerProfileDto.location?.city?.id || undefined },
+                },
               },
-            },
-            select: {
-              id: true,
-              city: {
-                select: {
-                  id: true,
-                  name: true,
-                  state: {
-                    select: {
-                      id: true,
-                      name: true,
-                      country: {
-                        select: { id: true, name: true },
+              select: {
+                id: true,
+                city: {
+                  select: {
+                    id: true,
+                    name: true,
+                    state: {
+                      select: {
+                        id: true,
+                        name: true,
+                        country: {
+                          select: { id: true, name: true },
+                        },
+                      },
+                    },
+                  },
+                },
+              }
+            });
+          }
+          if (!updateLawyerProfileDto?.location?.id && updateLawyerProfileDto.location?.city?.id) {
+            locationData = await this.prisma.location.create({
+              data: {
+                address: updateLawyerProfileDto.location.address || undefined,
+                latitude: updateLawyerProfileDto.location.latitude || undefined,
+                longitude: updateLawyerProfileDto.location.longitude || undefined,
+                locationOf: 'LAWYER',
+                city: { connect: { id: updateLawyerProfileDto.location.city.id } },
+              },
+              select: {
+                id: true,
+                city: {
+                  select: {
+                    id: true,
+                    name: true,
+                    state: {
+                      select: {
+                        id: true,
+                        name: true,
+                        country: {
+                          select: { id: true, name: true },
+                        },
                       },
                     },
                   },
                 },
               },
-            }
-          });
-        }
-        if (!updateLawyerProfileDto?.location?.id && updateLawyerProfileDto.location?.city?.id) {
-          locationData = await this.prisma.location.create({
-            data: {
-              address: updateLawyerProfileDto.location.address || undefined,
-              latitude: updateLawyerProfileDto.location.latitude || undefined,
-              longitude: updateLawyerProfileDto.location.longitude || undefined,
-              locationOf:'LAWYER',
-              city: { connect: { id: updateLawyerProfileDto.location.city.id } },
-            },
-            select: {
-              id: true,
-              city: {
-                select: {
-                  id: true,
-                  name: true,
-                  state: {
-                    select: {
-                      id: true,
-                      name: true,
-                      country: {
-                        select: { id: true, name: true },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          });
-        }
+            });
+          }
         } catch (error) {
           this.logger.error(`Error updating location for user ID: ${user.sub}`, error);
           throw new InternalServerErrorException('Error updating location');
         }
         this.logger.log(`Location data for user ID ${user.sub}: ${(locationData)}`);
-        const locationId = locationData?.id || null;
+        const locationId = locationData?.id || undefined;
         // Handle primary court
-        let primaryCourtId: string | null = null;
-        if (updateLawyerProfileDto.primaryCourt) {
+        let primaryCourtId: string | undefined = undefined;
+        if (updateLawyerProfileDto.primaryCourt?.name && !updateLawyerProfileDto.primaryCourt?.id) {
           const primaryCourt = await this.findOrCreatePracticeCourt(
-            updateLawyerProfileDto.primaryCourt,
+            updateLawyerProfileDto.primaryCourt.name,
           );
           primaryCourtId = primaryCourt.id;
         }
@@ -303,15 +304,15 @@ export class ProfilesService {
           data: {
             name: updateLawyerProfileDto.name || undefined,
             photo: updateLawyerProfileDto.photo || undefined,
-            locationId: locationId|| undefined,
+            locationId: locationId || undefined,
             experience: updateLawyerProfileDto.experience || undefined,
             bio: updateLawyerProfileDto.bio || undefined,
             consultFee: updateLawyerProfileDto.consultFee || undefined,
             barId: updateLawyerProfileDto.barId || undefined,
             isVerified: updateLawyerProfileDto.isVerified || undefined,
-            registrationPending: false,
-            specializationId: specializationId || undefined,
-            primaryCourtId: primaryCourtId || undefined,
+            registrationPending: updateLawyerProfileDto.registrationPending ? updateLawyerProfileDto.registrationPending : true,
+            specializationId: (updateLawyerProfileDto.specialization?.id ? updateLawyerProfileDto.specialization.id : specializationId) || undefined,
+            primaryCourtId: (updateLawyerProfileDto.primaryCourt?.id ? updateLawyerProfileDto.primaryCourt.id : primaryCourtId) || undefined,
             education: updateLawyerProfileDto.education
               ? {
                 upsert: {
@@ -322,7 +323,8 @@ export class ProfilesService {
               : undefined,
           },
         });
-
+        // Many-to-many relationships logic
+        
         // Clarify frontend expectations
         // Disconnect existing many-to-many relations
         // await prisma.lawyerPracticeArea.deleteMany({
@@ -335,119 +337,149 @@ export class ProfilesService {
         // Handle Practice Areas
         if (updateLawyerProfileDto.practiceAreas) {
           for (const areaDto of updateLawyerProfileDto.practiceAreas) {
-            const practiceArea = await prisma.practiceArea.upsert({
-              where: { name: areaDto.name },
-              update: { name: areaDto.name, description: areaDto.description },
-              create: {
-                name: areaDto.name,
-                description: areaDto.description,
-              },
-            });
-            await prisma.lawyerPracticeArea.create({
-              data: {
-                lawyerProfileId: existingProfile.id,
-                practiceAreaId: practiceArea.id,
-              },
-            });
-          }
-        }
-
-        // Handle Practice courts location
-        // for (courtDto.location.cityId of updateLawyerProfileDto.practiceCourts) { }
-        // Handle Practice Courts
-        if (updateLawyerProfileDto.practiceCourts) {
-          for (const courtDto of updateLawyerProfileDto.practiceCourts) {
-            if (!courtDto.name) {
-              this.logger.warn(
-                `Practice court name is required for user ID: ${user.sub}`,
-              );
-              throw new BadRequestException(
-                'Practice court name is required.',
-              );
-            }
-            // let updatedCourtLocation: LocationDetailsDto | null = null;
-            let updatedCourtLocation: any;
-            if (courtDto.location?.city?.id) {
-              updatedCourtLocation = await this.prisma.location.create({
-               
-                data: {
-                  address: courtDto.location.address || undefined,
-                  latitude: courtDto.location.latitude || undefined,
-                  longitude: courtDto.location.longitude || undefined,
-                  city: { connect: { id: courtDto.location.city?.id }  }, // we can also use city name if its unique.
-                  // practiceCourts: { connect: { id: courtDto.id || undefined } },
-                  locationOf: 'PRACTICE_COURT'
-
-                },
-                select: {
-                  id: true,
-                 
-                  city: {
-                    select: { id: true, name: true, state: { select: { id: true, name: true, country: { select: { id: true, name: true } } } } },
-                  },
-                  
-                }
-              })
-            };
-             if (courtDto.location?.id) {
-           await this.prisma.location.update({
-            where: { id: courtDto.location.id, locationOf: 'PRACTICE_COURT' },
-            data: {
-              address: courtDto.location.address || undefined,
-              latitude: courtDto.location.latitude || undefined,
-              longitude: courtDto.location.longitude || undefined,
-              cityId: courtDto.location?.city?.id || undefined,
-              locationOf: 'PRACTICE_COURT',
-            },
-          });
-            } 
-            const practiceCourt = await prisma.practiceCourt.upsert({
-              where: { name: courtDto.name },
-              update: { name: courtDto.name, locationId: updatedCourtLocation?.id || undefined || courtDto.locationId },
-              create: {
-                name: courtDto.name,
-                locationId:  updatedCourtLocation?.id ,
-              },
-            });
-
-            if (!existingProfile.practiceCourts.some(court => court.practiceCourt.id === practiceCourt.id)) {
-              await prisma.lawyerPracticeCourt.create({
-                data: {
-                  lawyerProfileId: existingProfile.id,
-                  practiceCourtId: practiceCourt.id,
-                },
+            let practiceArea;
+            if (!areaDto.id) {
+              practiceArea = await prisma.practiceArea.findUnique({
+                where: { name: areaDto.name },
+                select: { id: true },
+                // User Can NOT create or update static practice areas for now...
+                // where: { name: areaDto.name },
+                // update: { name: areaDto.name, description: areaDto.description },
+                // create: {
+                //   name: areaDto.name,
+                //   description: areaDto.description,
+                // },
               });
             }
+            
+            
+            // If there's existing practice courts in the profile, we skip them
+            //Only create a new entry if the court is not already associated with the profile
+            await prisma.lawyerPracticeCourt.upsert({
+              where: {
+                lawyerProfileId_practiceCourtId: {
+                  lawyerProfileId: existingProfile.id,
+                  practiceCourtId: areaDto?.id ? areaDto.id : practiceArea.id,
+                },
+              },
+              create: {
+                lawyerProfileId: existingProfile.id,
+                practiceCourtId: areaDto?.id ? areaDto.id : practiceArea.id,
+              },
+              update: {},
+            });
           }
-        }
 
-        return prisma.lawyerProfile.findUnique({
-          where: { userId: user.sub },
-          include: {
-            practiceAreas: { include: { practiceArea: true } },
-            practiceCourts: { include: { practiceCourt: true } },
-            services: { include: { service: true } },
-            specialization: true,
-            primaryCourt: true,
-            education: true,
-            location: {
-              include: {
-                city: {
-                  include: {
-                    state: {
-                      include: {
-                        country: true,
+          // Handle Practice courts location
+          // for (courtDto.location.cityId of updateLawyerProfileDto.practiceCourts) { }
+          // Handle Practice Courts
+          if (updateLawyerProfileDto.practiceCourts) {
+            for (const courtDto of updateLawyerProfileDto.practiceCourts) {
+              let practiceCourt;
+              if (!courtDto.id) {
+                practiceCourt = await prisma.practiceCourt.findUnique({
+                  where: { name: courtDto.name },
+                  select: { id: true },
+                });
+              }
+              // let updatedCourtLocation: LocationDetailsDto | null = null;
+              let updatedCourtLocation: any;
+              // Where are we connecting newly updated or created location ?
+              if (!courtDto.location?.id && courtDto.location?.city?.id) {
+                updatedCourtLocation = await this.prisma.location.create({
+               
+                  data: {
+                    address: courtDto.location.address || undefined,
+                    latitude: courtDto.location.latitude || undefined,
+                    longitude: courtDto.location.longitude || undefined,
+                    city: { connect: { id: courtDto.location.city?.id } }, // we can also use city name if its unique.
+                    practiceCourts: { connect: { id: courtDto.id || undefined, name: courtDto.name || undefined } },
+                    locationOf: 'PRACTICE_COURT'
+
+                  },
+                  select: {
+                    id: true,
+                 
+                    city: {
+                      select: { id: true, name: true, state: { select: { id: true, name: true, country: { select: { id: true, name: true } } } } },
+                    },
+                  
+                  }
+                })
+              };
+              if (courtDto.location?.id) {
+                await this.prisma.location.update({
+                  where: { id: courtDto.location.id, locationOf: 'PRACTICE_COURT' },
+                  data: {
+                    address: courtDto.location.address || undefined,
+                    latitude: courtDto.location.latitude || undefined,
+                    longitude: courtDto.location.longitude || undefined,
+                    cityId: courtDto.location?.city?.id || undefined,
+                    locationOf: 'PRACTICE_COURT',
+                    practiceCourts: { connect: { id: courtDto.id || undefined, name: courtDto.name || undefined } },
+                  },
+                });
+              }
+              // User can NOT create or update practice courts for now...
+              // const practiceCourt = await prisma.practiceCourt.upsert({
+              //   where: { name: courtDto.name },
+              //   update: { name: courtDto.name, locationId: updatedCourtLocation?.id || undefined || courtDto.locationId },
+              //   create: {
+              //     name: courtDto.name,
+              //     locationId:  updatedCourtLocation?.id ,
+              //   },
+              // });
+
+          
+              {
+                // If there's existing practice courts in the profile, we skip them
+                //Only create a new entry if the court is not already associated with the profile
+                await prisma.lawyerPracticeCourt.upsert({
+                  where: {
+                    lawyerProfileId_practiceCourtId: {
+                      lawyerProfileId: existingProfile.id,
+                      practiceCourtId: courtDto?.id ? courtDto.id : practiceCourt.id,
+                    },
+                  },
+                  create: {
+                    lawyerProfileId: existingProfile.id,
+                    practiceCourtId: courtDto?.id ? courtDto.id : practiceCourt.id,
+                  },
+                  update: {},
+                });
+              }
+            }
+          }
+
+          return prisma.lawyerProfile.findUnique({
+            where: { userId: user.sub },
+            include: {
+              practiceAreas: { include: { practiceArea: true } },
+              practiceCourts: { include: { practiceCourt: true } },
+              services: { include: { service: true } },
+              specialization: true,
+              primaryCourt: true,
+              education: true,
+              location: {
+                include: {
+                  city: {
+                    include: {
+                      state: {
+                        include: {
+                          country: true,
+                        },
                       },
                     },
                   },
                 },
               },
             },
-          },
-        });
+          });
       
       
+        }
       })
+    
     
   
   

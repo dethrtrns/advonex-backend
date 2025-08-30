@@ -167,6 +167,9 @@ export class ProfilesController {
       - If a string is provided, it will be checked against existing data
       - If a match is found, the relation will be mapped
       - If no match is found, new data will be created and associated
+      NOTE:
+      - Practice areas and courts can NOT be Created or updated by lawyers
+      - Practice areas and courts require name or ID of existing records which will be connected to the lawyer profile
       Requires LAWYER role.
       
       **Testing Tips:**

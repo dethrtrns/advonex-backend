@@ -133,19 +133,22 @@ export class UpdateLawyerProfileDto implements Partial<LawyerProfile> {
   @IsBoolean()
   registrationPending?: boolean;
 
-  @ApiPropertyOptional({
-    description: 'Primary specialization ID or name',
+  @ApiPropertyOptional({ type: () => PracticeAreaDto,
+    description: 'Primary practiceArea(specialization) needs an ID or name',
   })
   @IsOptional()
-  @IsString()
-  specialization?: string;
+  @ValidateNested()
+  @Type(() => PracticeAreaDto)
+  specialization?: PracticeAreaDto | undefined;
 
   @ApiPropertyOptional({
-    description: 'Primary court ID or name',
+    type: () => PracticeCourtDto,
+    description: 'Primary court needs an ID or name',
   })
   @IsOptional()
-  @IsString()
-  primaryCourt?: string;
+  @ValidateNested()
+  @Type(() => PracticeCourtDto)
+  primaryCourt?: PracticeCourtDto | undefined;
 
   @ApiPropertyOptional({ type: () => LocationDetailsDto })
   @IsOptional()
@@ -163,7 +166,7 @@ export class UpdateLawyerProfileDto implements Partial<LawyerProfile> {
 
   // Review
   @ApiPropertyOptional({
-    description: 'Practice Courts: IF you want to update location of practice courts: either locationId or cityId must be present.',
+    description: 'Practice Courts:accepts ID or name  NOTE: IF you want to update location of practice courts: either locationId or cityId must be present.',
     type: 'array',
     items: {
       type: 'object',
@@ -189,12 +192,13 @@ export class UpdateLawyerProfileDto implements Partial<LawyerProfile> {
   practiceCourts?: PracticeCourtDto[] | undefined;
 
   @ApiPropertyOptional({
-    description: 'Practice Areas',
+    description: 'Practice Areas: accepts ID or name',
     type: 'array',
     items: {
       type: 'object',
-    properties: {
-      name: { type: 'string' },
+      properties: {
+      id: { type: 'string', nullable: true },
+      name: { type: 'string', nullable: true },
       description: { type: 'string', nullable: true },
      
     },

@@ -9,15 +9,15 @@ import { practiceCourts } from './practiceCourts';
 
 export const locations = [
   // Practice Courts Locations (India)
-  { id: 'loc-court-delhi', cityId: '2b3c4d5e-6f7a-8901-2345-67890abcdef1', address: 'Supreme Court of India, Tilak Marg', locationOf: LocationType.PRACTICE_COURT },
-  { id: 'loc-court-mumbai', cityId: '1a2b3c4d-5e6f-7890-1234-567890abcdef', address: 'High Court, Fort, Mumbai', locationOf: LocationType.PRACTICE_COURT },
-  { id: 'loc-court-bangalore', cityId: '3c4d5e6f-7a8b-9012-3456-7890abcdef2', address: 'District Court, Nrupathunga Road, Bangalore', locationOf: LocationType.PRACTICE_COURT },
-  { id: 'loc-court-chennai', cityId: '6f7a8b9c-0d1e-2345-6789-0abcdef5', address: 'Family Court, High Court Campus, Chennai', locationOf: LocationType.PRACTICE_COURT },
-  { id: 'loc-court-kolkata', cityId: '7a8b9c0d-1e2f-3456-7890-1bcdef6', address: 'Consumer Court, Creed Row, Kolkata', locationOf: LocationType.PRACTICE_COURT },
+  {  cityId: '25c501d2-e183-4dfc-a386-39b300fa8373', address: 'Supreme Court of India, Tilak Marg', locationOf: LocationType.PRACTICE_COURT },
+  {  cityId: 'ba72de0d-217b-450a-9e01-cfd236d2a296', address: 'High Court, Lko', locationOf: LocationType.PRACTICE_COURT },
+  {  cityId: '25c501d2-e183-4dfc-a386-39b300fa8373', address: 'District Court, Delhi', locationOf: LocationType.PRACTICE_COURT },
+  {  cityId: 'ba72de0d-217b-450a-9e01-cfd236d2a296', address: 'Family Court, Lucknow', locationOf: LocationType.PRACTICE_COURT },
+  {  cityId: '7dc4cce4-543e-4883-a919-4a1ff33200ea', address: 'Consumer Court, Ayodhya', locationOf: LocationType.PRACTICE_COURT },
   // Lawyer Locations (Thailand)
-  { id: 'loc-lawyer-bkk', cityId: 'a1b2c3d4-e5f6-7890-1234-567890abcde1', address: '123 Sukhumvit Road, Bangkok', locationOf: LocationType.LAWYER },
-  { id: 'loc-lawyer-cnx', cityId: 'a1b2c3d4-e5f6-7890-1234-567890abcde2', address: '456 Nimmanhaemin Road, Chiang Mai', locationOf: LocationType.LAWYER },
-  { id: 'loc-lawyer-hkt', cityId: 'a1b2c3d4-e5f6-7890-1234-567890abcde3', address: '789 Patong Beach Road, Phuket', locationOf: LocationType.LAWYER },
+  {  cityId: 'ba72de0d-217b-450a-9e01-cfd236d2a296', address: '123 Sukhumvit Road', locationOf: LocationType.LAWYER },
+  {  cityId: 'ba72de0d-217b-450a-9e01-cfd236d2a296', address: '456 Nimmanhaemin Road, Chiang Mai', locationOf: LocationType.LAWYER },
+  {  cityId: 'ba72de0d-217b-450a-9e01-cfd236d2a296', address: '789 Patong Beach Road, Phuket', locationOf: LocationType.LAWYER },
 ];
 
 
