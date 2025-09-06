@@ -202,7 +202,7 @@ export class ProfilesController {
   async updateLawyerProfile(
     @Req() req: Request,
     @Body() updateLawyerProfileDto: UpdateLawyerProfileDto,
-  ): Promise<LawyerProfile> {
+  ): Promise<Partial<LawyerProfile>> {
     const user = req.user as JwtPayload;
     if (!user?.sub) {
       throw new UnauthorizedException();

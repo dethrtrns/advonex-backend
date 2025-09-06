@@ -173,7 +173,7 @@ export class ProfilesService {
   async updateLawyerProfile(
     user: JwtPayload,
     updateLawyerProfileDto: UpdateLawyerProfileDto,
-  ): Promise<LawyerProfile> {
+  ): Promise<Partial<LawyerProfile>> {
     this.logger.log(`Updating lawyer profile for user ID: ${user.sub}`);
 
     if (!user.roles.includes(Role.LAWYER)) {
@@ -207,30 +207,35 @@ export class ProfilesService {
     }
 
     try {
-      const updatedProfile = await this.prisma.$transaction(async (prisma) => {
+      const updatedProfile = await this.prisma.$transaction(async (tx) => {
         // Handle specialization
-        let specializationId: string | null = null;
+        let specializationId: string | undefined = undefined;
         if (updateLawyerProfileDto?.specialization?.name && !updateLawyerProfileDto.specialization?.id) {
-          const specialization = await this.findOrCreatePracticeArea(
-            updateLawyerProfileDto.specialization.name,
-          );
-          specializationId = specialization.id;
+          const specialization = await tx.practiceArea.findUnique({
+            where: { name: updateLawyerProfileDto.specialization.name },
+            select: { id: true },
+          });
+          // if (!specialization) {
+          //  await this.findOrCreatePracticeArea(
+          //   updateLawyerProfileDto.specialization.name,
+          // );
+          specializationId = specialization?.id;
         }
         let locationData: LocationDetailsDto | undefined = undefined;
         try {
           // Handle location: frontend must send both ID and city ID
           if (updateLawyerProfileDto.location?.id) {
-            locationData = await this.prisma.location.update({
+            locationData = await tx.location.update({
               where: { id: updateLawyerProfileDto.location.id },
               data: {
                 address: updateLawyerProfileDto.location.address || undefined,
                 latitude: updateLawyerProfileDto.location.latitude || undefined,
                 longitude: updateLawyerProfileDto.location.longitude || undefined,
                 locationOf: 'LAWYER',
-                // cityId: updateLawyerProfileDto.location.city.id,
-                city: {
-                  connect: { id: updateLawyerProfileDto.location?.city?.id || undefined },
-                },
+                cityId: updateLawyerProfileDto.location?.city?.id || undefined,
+                // city: {
+                //   connect: { id: updateLawyerProfileDto.location?.city?.id || undefined },
+                // },
               },
               select: {
                 id: true,
@@ -253,7 +258,7 @@ export class ProfilesService {
             });
           }
           if (!updateLawyerProfileDto?.location?.id && updateLawyerProfileDto.location?.city?.id) {
-            locationData = await this.prisma.location.create({
+            locationData = await tx.location.create({
               data: {
                 address: updateLawyerProfileDto.location.address || undefined,
                 latitude: updateLawyerProfileDto.location.latitude || undefined,
@@ -287,6 +292,7 @@ export class ProfilesService {
         }
         this.logger.log(`Location data for user ID ${user.sub}: ${(locationData)}`);
         const locationId = locationData?.id || undefined;
+
         // Handle primary court
         let primaryCourtId: string | undefined = undefined;
         if (updateLawyerProfileDto.primaryCourt?.name && !updateLawyerProfileDto.primaryCourt?.id) {
@@ -294,35 +300,8 @@ export class ProfilesService {
             updateLawyerProfileDto.primaryCourt.name,
           );
           primaryCourtId = primaryCourt.id;
-        }
+        };
 
-        // Main profile update logic
-        await prisma.lawyerProfile.update({
-          where: {
-            userId: user.sub,
-          },
-          data: {
-            name: updateLawyerProfileDto.name || undefined,
-            photo: updateLawyerProfileDto.photo || undefined,
-            locationId: locationId || undefined,
-            experience: updateLawyerProfileDto.experience || undefined,
-            bio: updateLawyerProfileDto.bio || undefined,
-            consultFee: updateLawyerProfileDto.consultFee || undefined,
-            barId: updateLawyerProfileDto.barId || undefined,
-            isVerified: updateLawyerProfileDto.isVerified || undefined,
-            registrationPending: updateLawyerProfileDto.registrationPending ? updateLawyerProfileDto.registrationPending : true,
-            specializationId: (updateLawyerProfileDto.specialization?.id ? updateLawyerProfileDto.specialization.id : specializationId) || undefined,
-            primaryCourtId: (updateLawyerProfileDto.primaryCourt?.id ? updateLawyerProfileDto.primaryCourt.id : primaryCourtId) || undefined,
-            education: updateLawyerProfileDto.education
-              ? {
-                upsert: {
-                  create: updateLawyerProfileDto.education,
-                  update: updateLawyerProfileDto.education,
-                },
-              }
-              : undefined,
-          },
-        });
         // Many-to-many relationships logic
         
         // Clarify frontend expectations
@@ -339,7 +318,7 @@ export class ProfilesService {
           for (const areaDto of updateLawyerProfileDto.practiceAreas) {
             let practiceArea;
             if (!areaDto.id) {
-              practiceArea = await prisma.practiceArea.findUnique({
+              practiceArea = await tx.practiceArea.findUnique({
                 where: { name: areaDto.name },
                 select: { id: true },
                 // User Can NOT create or update static practice areas for now...
@@ -353,22 +332,22 @@ export class ProfilesService {
             }
             
             
-            // If there's existing practice courts in the profile, we skip them
+            // If there's existing practice areas in the profile, we skip them
             //Only create a new entry if the court is not already associated with the profile
-            await prisma.lawyerPracticeCourt.upsert({
+            await tx.lawyerPracticeArea.upsert({
               where: {
-                lawyerProfileId_practiceCourtId: {
+                lawyerProfileId_practiceAreaId: {
                   lawyerProfileId: existingProfile.id,
-                  practiceCourtId: areaDto?.id ? areaDto.id : practiceArea.id,
+                  practiceAreaId: areaDto?.id ? areaDto.id : practiceArea.id,
                 },
               },
               create: {
                 lawyerProfileId: existingProfile.id,
-                practiceCourtId: areaDto?.id ? areaDto.id : practiceArea.id,
+                practiceAreaId: areaDto?.id ? areaDto.id : practiceArea.id,
               },
               update: {},
             });
-          }
+          }}
 
           // Handle Practice courts location
           // for (courtDto.location.cityId of updateLawyerProfileDto.practiceCourts) { }
@@ -377,7 +356,7 @@ export class ProfilesService {
             for (const courtDto of updateLawyerProfileDto.practiceCourts) {
               let practiceCourt;
               if (!courtDto.id) {
-                practiceCourt = await prisma.practiceCourt.findUnique({
+                practiceCourt = await tx.practiceCourt.findUnique({
                   where: { name: courtDto.name },
                   select: { id: true },
                 });
@@ -386,7 +365,7 @@ export class ProfilesService {
               let updatedCourtLocation: any;
               // Where are we connecting newly updated or created location ?
               if (!courtDto.location?.id && courtDto.location?.city?.id) {
-                updatedCourtLocation = await this.prisma.location.create({
+                updatedCourtLocation = await tx.location.create({
                
                   data: {
                     address: courtDto.location.address || undefined,
@@ -408,7 +387,7 @@ export class ProfilesService {
                 })
               };
               if (courtDto.location?.id) {
-                await this.prisma.location.update({
+                await tx.location.update({
                   where: { id: courtDto.location.id, locationOf: 'PRACTICE_COURT' },
                   data: {
                     address: courtDto.location.address || undefined,
@@ -431,28 +410,64 @@ export class ProfilesService {
               // });
 
           
-              {
+              if(courtDto.id || practiceCourt.id){
                 // If there's existing practice courts in the profile, we skip them
                 //Only create a new entry if the court is not already associated with the profile
-                await prisma.lawyerPracticeCourt.upsert({
-                  where: {
-                    lawyerProfileId_practiceCourtId: {
-                      lawyerProfileId: existingProfile.id,
-                      practiceCourtId: courtDto?.id ? courtDto.id : practiceCourt.id,
-                    },
-                  },
-                  create: {
+                await tx.lawyerPracticeCourt.create({
+                  data: {
                     lawyerProfileId: existingProfile.id,
                     practiceCourtId: courtDto?.id ? courtDto.id : practiceCourt.id,
                   },
-                  update: {},
+                 
                 });
               }
             }
           }
 
-          return prisma.lawyerProfile.findUnique({
-            where: { userId: user.sub },
+          // Main profile update logic
+        await tx.lawyerProfile.update({
+          where: {
+            userId: user.sub,
+          },
+          data: {
+            name: updateLawyerProfileDto.name || undefined,
+            photo: updateLawyerProfileDto.photo || undefined,
+            locationId: locationId || undefined,
+            experience: updateLawyerProfileDto.experience || undefined,
+            bio: updateLawyerProfileDto.bio || undefined,
+            consultFee: updateLawyerProfileDto.consultFee || undefined,
+            barId: updateLawyerProfileDto.barId || undefined,
+            isVerified: updateLawyerProfileDto.isVerified || undefined,
+            registrationPending: updateLawyerProfileDto.registrationPending ? updateLawyerProfileDto.registrationPending : true, // Registration pending TRUE by default
+            specializationId: (updateLawyerProfileDto.specialization?.id ? updateLawyerProfileDto.specialization.id : specializationId) || undefined,
+            primaryCourtId: (updateLawyerProfileDto.primaryCourt?.id ? updateLawyerProfileDto.primaryCourt.id : primaryCourtId) || undefined,
+            education: updateLawyerProfileDto.education
+              ? {
+                upsert: {
+                  create: updateLawyerProfileDto.education,
+                  update: updateLawyerProfileDto.education,
+                },
+              }
+              : undefined,
+          },
+        });
+
+        
+      
+      //   if (!updatedProfile) {
+      //   this.logger.warn(`Failed to return update Lawyer profile data for user ID: ${user.sub}; Please try again`);
+      //   throw new InternalServerErrorException(
+      //     `Transaction maybe success; Failed to return update lawyer profile data for user ID: ${user.sub} & Here is the updated profile: ${updatedProfile}`,
+      //   );
+      // };
+
+      // this.logger.log(
+      //   `Successfully updated lawyer profile ID: ${updatedProfile.id} for user ID: ${user.sub}`,
+      // );
+     
+          // }// what this braket for???
+         return await tx.lawyerProfile.findUnique({
+            where: { userId: user.sub },        
             include: {
               practiceAreas: { include: { practiceArea: true } },
               practiceCourts: { include: { practiceCourt: true } },
@@ -473,29 +488,28 @@ export class ProfilesService {
                   },
                 },
               },
+              
             },
           });
-      
-      
-        }
-      })
-    
-    
-  
-  
 
-      if (!updatedProfile) {
-        this.logger.warn(`Failed to update Lawyer profile for user ID: ${user.sub}; Please try again`);
-        throw new InternalServerErrorException(
-          `Transaction failed to update lawyer profile for user ID: ${user.sub}`,
-        );
-      }
+     })
+      
     
-      this.logger.log(
+  
+  
+       if (!updatedProfile) {
+        this.logger.warn(`Failed to return update Lawyer profile data for user ID: ${user.sub}; Please try again`);
+        throw new InternalServerErrorException(
+          `Transaction maybe success; Failed to return update lawyer profile data for user ID: ${user.sub} & Here is the updated profile: ${updatedProfile}`,
+          )};
+         this.logger.log(
         `Successfully updated lawyer profile ID: ${updatedProfile.id} for user ID: ${user.sub}`,
-      );
-      return updatedProfile;
-    }
+          );
+    
+          return updatedProfile;  
+  }   
+      
+    
 catch (error) {
       this.logger.error(
         `Failed to update lawyer profile for user ID: ${user.sub}. Error: ${error.message}`,
@@ -519,6 +533,7 @@ catch (error) {
         `An unexpected error occurred while updating lawyer profile: ${error.message}`,
       );
     }
+    
   }
 
 

@@ -137,7 +137,7 @@ export class UpdateLawyerProfileDto implements Partial<LawyerProfile> {
     description: 'Primary practiceArea(specialization) needs an ID or name',
   })
   @IsOptional()
-  @ValidateNested()
+  // @ValidateNested() // Causing Issue
   @Type(() => PracticeAreaDto)
   specialization?: PracticeAreaDto | undefined;
 
@@ -146,7 +146,7 @@ export class UpdateLawyerProfileDto implements Partial<LawyerProfile> {
     description: 'Primary court needs an ID or name',
   })
   @IsOptional()
-  @ValidateNested()
+  // @ValidateNested() // Causing Issue
   @Type(() => PracticeCourtDto)
   primaryCourt?: PracticeCourtDto | undefined;
 
