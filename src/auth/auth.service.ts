@@ -667,6 +667,7 @@ export class AuthService {
       const { count } = await this.prisma.refreshToken.deleteMany({
         where: { userId: userId },
       });
+      // Deactivate the provided role(Modify function to take userId and role as arg.)
       this.logger.log(`Deleted ${count} refresh tokens for user ID: ${userId}`);
     } catch (error) {
       this.logger.error(
@@ -1180,11 +1181,12 @@ export class AuthService {
                 data: { isActive: true },
               });
             }
+            // Removed to ensure user can have multi active roles...User has to "logout" to deactivate the role.
             // switch other roles to inactive
-            await tx.userRole.updateMany({
-              where: { userId: user.id, role: { not: dto.role } },
-              data: { isActive: false },
-            });
+            // await tx.userRole.updateMany({
+            //   where: { userId: user.id, role: { not: dto.role } },
+            //   data: { isActive: false },
+            // });
           }
           // Update last login time for existing user
           await tx.user.update({
