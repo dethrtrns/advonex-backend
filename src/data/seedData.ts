@@ -1,7 +1,5 @@
 import { Role, RequestStatus, AccountStatus, LocationType } from '@prisma/client';
 import { countries } from './countries';
-import { states } from './states';
-import { cities } from './cities';
 import { practiceAreas } from './practiceAreas';
 import { practiceCourts } from './practiceCourts';
 
@@ -403,8 +401,6 @@ export const consultationRequests = [
 
 export {
   countries,
-  states,
-  cities,
   practiceAreas,
   practiceCourts,
   // services, // Already exported

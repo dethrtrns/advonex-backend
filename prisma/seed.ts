@@ -13,8 +13,6 @@ import {
 } from '@prisma/client';
 import {
   countries,
-  states,
-  cities,
   locations,
   practiceAreas,
   practiceCourts,
